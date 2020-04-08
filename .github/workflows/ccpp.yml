@@ -26,4 +26,4 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: sandbox
-        path: sandox/sandbox
+        path: sandbox/sandbox
