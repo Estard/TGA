@@ -37,7 +37,8 @@ namespace tga{
         void setVulkanHandles(vk::Instance _instance, vk::PhysicalDevice _pDevice, vk::Device _device, vk::Queue _presentQueue, uint32_t _queueFamiliy);
         std::vector<const char*> getRequiredExtensions();
 
-        bool keyDown(Window window, Key key);
+        bool keyDown(Window window, Key key) override;
+        std::pair<int, int> mousePosition(Window window) override;
 
 
 

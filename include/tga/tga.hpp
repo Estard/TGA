@@ -493,6 +493,7 @@ namespace tga
 
         virtual bool windowShouldClose(Window window) = 0;
         virtual bool keyDown(Window window, Key key) = 0;
+        virtual std::pair<int, int> mousePosition(Window window) = 0;
 
 
         //Freedom

@@ -132,8 +132,25 @@ namespace tga
     bool VulkanWSI::keyDown(Window window, Key key)
     {
         auto &handle = windows[window];
+        GLFWwindow* glfwWin = std::any_cast<GLFWwindow*>(handle.nativeHandle);
+        if(key == Key::MouseLeft)
+            return glfwGetMouseButton(glfwWin,GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+        if(key == Key::MouseMiddle)
+            return glfwGetMouseButton(glfwWin,GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+        if(key == Key::MouseRight)
+            return glfwGetMouseButton(glfwWin,GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
         auto glfwKey = toGlfwKey(key);
-        return glfwGetKey(std::any_cast<GLFWwindow*>(handle.nativeHandle),glfwKey) == GLFW_PRESS;
+        return glfwGetKey(glfwWin,glfwKey) == GLFW_PRESS;
+    }
+
+    std::pair<int, int> VulkanWSI::mousePosition(Window window)
+    {
+        auto &handle = windows[window];
+        GLFWwindow* glfwWin = std::any_cast<GLFWwindow*>(handle.nativeHandle);
+        double xpos = 0;
+        double ypos = 0;
+        glfwGetCursorPos(glfwWin,&xpos,&ypos);
+        return {int(xpos),int(ypos)};
     }
 
 

@@ -146,9 +146,13 @@ namespace tga
             endOneTimeCmdBuffer(transitionCmdBuffer,graphicsCmdPool,graphicsQueue);
             fillTexture(textureInfo.dataSize,textureInfo.data,textureInfo.width,textureInfo.height, image);
             transitionCmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
+            transitionImageLayout(transitionCmdBuffer,image,vk::ImageLayout::eTransferDstOptimal,vk::ImageLayout::eGeneral);
+            endOneTimeCmdBuffer(transitionCmdBuffer,graphicsCmdPool,graphicsQueue);
         }
-        transitionImageLayout(transitionCmdBuffer,image,vk::ImageLayout::eTransferDstOptimal,vk::ImageLayout::eGeneral);
-        endOneTimeCmdBuffer(transitionCmdBuffer,graphicsCmdPool,graphicsQueue);
+        else{
+            transitionImageLayout(transitionCmdBuffer,image,vk::ImageLayout::eUndefined,vk::ImageLayout::eGeneral);
+            endOneTimeCmdBuffer(transitionCmdBuffer,graphicsCmdPool,graphicsQueue);
+        }    
         
         return handle;
     }
@@ -360,6 +364,11 @@ namespace tga
     bool TGAVulkan::keyDown(Window window, Key key)
     {
         return wsi.keyDown(window, key);
+    }
+
+    std::pair<int, int> TGAVulkan::mousePosition(Window window)
+    {
+        return wsi.mousePosition(window);
     }
     
     void TGAVulkan::free(Shader shader) 

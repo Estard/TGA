@@ -38,6 +38,7 @@ namespace tga{
 
         bool windowShouldClose(Window window) override;
         bool keyDown(Window window, Key key) override;
+        std::pair<int, int> mousePosition(Window window) override;
 
         void free(Shader shader) override;
         void free(Buffer buffer) override;
