@@ -221,7 +221,7 @@ namespace tga
             renderPass = makeRenderPass(renderTex.format,renderPassInfo.clearOperations,vk::ImageLayout::eGeneral);
             std::array<vk::ImageView, 2> attachments{ renderTex.imageView,depthBuffer.imageView };
             framebuffers.emplace_back(device.createFramebuffer({{}, renderPass, 
-                attachments.size(),attachments.data(),renderTex.extent.width,renderTex.extent.height,1}));
+                static_cast<uint32_t>(attachments.size()),attachments.data(),renderTex.extent.width,renderTex.extent.height,1}));
             
         }
         else if(auto renderTarget = std::get_if<Window>(&renderPassInfo.renderTarget)){
@@ -234,7 +234,7 @@ namespace tga
             for(uint32_t i = 0; i < renderWindow.imageViews.size();i++){
                 std::array<vk::ImageView, 2> attachments{ renderWindow.imageViews[i],depthBuffer.imageView };
                 framebuffers.emplace_back(device.createFramebuffer({{}, renderPass, 
-                attachments.size(),attachments.data(),renderWindow.extent.width,renderWindow.extent.height,1}));
+				static_cast<uint32_t>(attachments.size()),attachments.data(),renderWindow.extent.width,renderWindow.extent.height,1}));
             }
         }
         std::vector<vk::DescriptorSetLayout> setLayouts = decodeInputLayout(renderPassInfo.inputLayout);
@@ -290,11 +290,11 @@ namespace tga
         std::array<float,4> colorClear ={0.,0.,0.,0.};
         std::array<vk::ClearValue, 2> clearValues = { };
         clearValues[0] = vk::ClearColorValue(colorClear);
-        clearValues[1] = vk::ClearDepthStencilValue(1.f, 0.);
+        clearValues[1] = vk::ClearDepthStencilValue(1.f, 0);
 
         uint32_t frameIndex = std::min(framebufferIndex,uint32_t(handle.framebuffers.size()-1));
         cmd.beginRenderPass({handle.renderPass,handle.framebuffers[frameIndex],{{},handle.area},
-            clearValues.size(),clearValues.data()},vk::SubpassContents::eInline);
+			static_cast<uint32_t>(clearValues.size()),clearValues.data()},vk::SubpassContents::eInline);
         cmd.bindPipeline(vk::PipelineBindPoint::eGraphics,handle.pipeline);
         cmd.setViewport(0,{{0,0,float(handle.area.width),float(handle.area.height),0,1}});
         cmd.setScissor(0,{{{},handle.area}});
@@ -327,7 +327,7 @@ namespace tga
 
     uint32_t TGAVulkan::backbufferCount(Window window) 
     {
-        return wsi.getWindow(window).imageViews.size();
+        return static_cast<uint32_t>(wsi.getWindow(window).imageViews.size());
     }
 
     uint32_t TGAVulkan::nextFrame(Window window) 
@@ -566,7 +566,7 @@ namespace tga
         vk::PipelineInputAssemblyStateCreateInfo inputAssembly{{},vk::PrimitiveTopology::eTriangleList,VK_FALSE};
 
         std::array<vk::DynamicState,2> dynamicStates{vk::DynamicState::eViewport,vk::DynamicState::eScissor};
-        vk::PipelineDynamicStateCreateInfo dynamicState{{},dynamicStates.size(),dynamicStates.data()};
+        vk::PipelineDynamicStateCreateInfo dynamicState{{},static_cast<uint32_t>(dynamicStates.size()),dynamicStates.data()};
         vk::Viewport viewport{0,0,1,1,0,1}; vk::Rect2D scissor{{0,0},{1,1}};
         vk::PipelineViewportStateCreateInfo viewportState{{},1,&viewport,1,&scissor};
         auto rasterizer = determineRasterizerState(renderPassInfo.rasterizerConfig);
@@ -798,7 +798,7 @@ namespace tga
        for(uint32_t i = 0; i < attributes.size();i++)
        {
             descriptions.emplace_back(vk::VertexInputAttributeDescription(
-                i,0,determineImageFormat(attributes[i].format),attributes[i].offset));
+                i,0,determineImageFormat(attributes[i].format), static_cast<uint32_t>(attributes[i].offset)));
        }
        return descriptions;
    }
