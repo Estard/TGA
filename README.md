@@ -8,6 +8,7 @@ Should simply loading the cmake project not work:
 - Add TGA/include to additional includes
 - Add the source file of TGA/src/tga_*api_you_want_use* to your project
 - Add the source file of TGA/src/tga_*api_you_want_use*/WSI_*window_library* to your project
+- If on Windows: Add NOMINMAX to preprocessor defines
 
 Currently implemented are:
 - Vulkan API using GLFW as window library
