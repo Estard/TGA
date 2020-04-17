@@ -393,31 +393,31 @@ namespace tga
 
     //CreationInfos
     struct ShaderInfo{
-        ShaderType type;
-        uint8_t const *src;
-        size_t srcSize;
+        ShaderType type; //Type of Shader. Valid Types are ShaderType::vertex and ShaderType::fragment
+        uint8_t const *src; //Pointer to the shader code. Dependant on the underlying API. For Vulkan this would be SPIR-V
+        size_t srcSize; //Size of the shader code in bytes
         ShaderInfo(ShaderType _type=ShaderType::undefined, uint8_t const *_src=nullptr, size_t _srcSize=0):
             type(_type),src(_src),srcSize(_srcSize){}
         ShaderInfo(ShaderType _type=ShaderType::undefined, std::vector<uint8_t> const &_src = std::vector<uint8_t>()):
             type(_type),src(_src.data()),srcSize(_src.size()){}
     };
     struct BufferInfo{
-        BufferUsage usage;
-        uint8_t const *data;
-        size_t dataSize;
+        BufferUsage usage; //Usage flags of the Buffer. Valid Usage flags are BufferUsage::uniform, BufferUsage::vertex and BufferUsage::index. Others are work in progress
+        uint8_t const *data; //Data of the Buffer to be uploaded. Alignment requirements are the users responsibility 
+        size_t dataSize; //Size of the buffer data in bytes
         BufferInfo(BufferUsage _usage = BufferUsage::undefined, uint8_t const *_data=nullptr, size_t _dataSize=0):
             usage(_usage),data(_data),dataSize(_dataSize){}
         BufferInfo(BufferUsage _usage = BufferUsage::undefined,std::vector<uint8_t> const &_data = std::vector<uint8_t>()):
             usage(_usage),data(_data.data()),dataSize(_data.size()){}
     };
     struct TextureInfo{
-        uint32_t width;
-        uint32_t height;
-        uint8_t const *data;
-        size_t dataSize;
-        Format format;
-        SamplerMode samplerMode;
-        RepeatMode repeatMode;
+        uint32_t width; //Width of the Texture in pixels
+        uint32_t height; //Height of the Texture in pixels
+        uint8_t const *data; //Data of the Texture. Pass a nullptr to create a texture with undefined content
+        size_t dataSize; //Size of the texture data in bytes
+        Format format; //Format of the pixels. Example: For 8 bit per Pixel with red, green and blue channel use Format::r8g8b8_unorm. For a list of all formats refer to tga::Format
+        SamplerMode samplerMode; //How the Texture is sampled. Valid SamplerModes are SamplerMode::nearest (default) and   SamplerMode::linear
+        RepeatMode repeatMode; //How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeate modes refer to tga::RepeatMode
         TextureInfo(uint32_t _width = 0, uint32_t _height = 0, uint8_t const *_data = nullptr, size_t _dataSize = 0, Format _format = Format::undefined,
                     SamplerMode _samplerMode = SamplerMode::nearest, RepeatMode _repeateMode = RepeatMode::clampBorder):
             width(_width), height(_height), data(_data), dataSize(_dataSize), format(_format), samplerMode(_samplerMode),repeatMode(_repeateMode){}
@@ -426,29 +426,29 @@ namespace tga
         width(_width), height(_height), data(_data.data()), dataSize(_data.size()), format(_format), samplerMode(_samplerMode),repeatMode(_repeateMode){}
     };
     struct WindowInfo{
-        uint32_t width;
-        uint32_t height;
-        PresentMode presentMode;
-        uint32_t framebufferCount;
+        uint32_t width; //Width of the Window in pixels
+        uint32_t height; //Height of the Window in pixels
+        PresentMode presentMode; //How syncronization to the monitor is handled. Valid PresentModes are PresentMode::immediate (show frame as fast as possible, default) and PresentMode::vsync (sync to the monitor refresh rate) 
+        uint32_t framebufferCount; //How many backbuffers the window has to manage. Due to minimum and maximum contraints this value may not be the actual resulting number of backbuffers and needs to be polled later
         WindowInfo(uint32_t _width = 0, uint32_t _height = 0, PresentMode _presentMode = PresentMode::immediate,uint32_t _framebufferCount=0):
             width(_width), height(_height), presentMode(_presentMode),framebufferCount(_framebufferCount){}
     };
 
     struct InputSetInfo{
-        RenderPass targetRenderPass;
-        uint32_t setIndex;
-        std::vector<Binding> bindings;
+        RenderPass targetRenderPass; //The RenderPass this InputSet should be used with
+        uint32_t setIndex; //The Index of this InputSet as defined in RenderPass.inputLayout  
+        std::vector<Binding> bindings; //The collection of Bindings in this InputSet
         InputSetInfo(RenderPass _targetRenderPass,uint32_t _setIndex, std::vector<Binding> const &_bindings):
             targetRenderPass(_targetRenderPass),setIndex(_setIndex),bindings(_bindings){}
     };
 
     struct RenderPassInfo{
-        std::vector<Shader> shaderStages;
-        std::variant<Texture, Window> renderTarget;
-        ClearOperation clearOperations;
-        VertexLayout vertexLayout;
-        RasterizerConfig rasterizerConfig;
-        InputLayout inputLayout;
+        std::vector<Shader> shaderStages; //The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.)
+        std::variant<Texture, Window> renderTarget; //Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time 
+        ClearOperation clearOperations; //Determines if the renderTarget and/or depth-buffer should be cleared
+        VertexLayout vertexLayout; //Describes the format of the vertices in the vertex-buffer
+        RasterizerConfig rasterizerConfig; //Describes the configuration the Rasterizer, i.e blending, depth-buffer, culling and polygon draw mode
+        InputLayout inputLayout; //Describes how the Bindings are organized
         RenderPassInfo(std::vector<Shader> const &_shaderStages = std::vector<Shader>(), 
                     std::variant<Texture, Window> _renderTarget = Texture(), VertexLayout _vertexLayout = VertexLayout(),
                     ClearOperation _clearOperations = ClearOperation::none,
@@ -486,14 +486,14 @@ namespace tga
         virtual void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset) = 0;
 
         //Window functions;
-        virtual uint32_t backbufferCount(Window window) = 0;
-        virtual uint32_t nextFrame(Window window) = 0;
-        virtual void present(Window window) = 0;
-        virtual void setWindowTitel(Window window, const std::string &title)=0;
+        virtual uint32_t backbufferCount(Window window) = 0; //Number of framebuffers used by a window
+        virtual uint32_t nextFrame(Window window) = 0; //Index of the next available framebuffer & polling of events
+        virtual void present(Window window) = 0; //shows the last acquired framebuffer on screen 
+        virtual void setWindowTitel(Window window, const std::string &title)=0; //Changes title of window
 
-        virtual bool windowShouldClose(Window window) = 0;
-        virtual bool keyDown(Window window, Key key) = 0;
-        virtual std::pair<int, int> mousePosition(Window window) = 0;
+        virtual bool windowShouldClose(Window window) = 0; //true if user has issued close command (pressed x) on the window
+        virtual bool keyDown(Window window, Key key) = 0; //true if a key from keyboard or mouse was pressed during the last event poll
+        virtual std::pair<int, int> mousePosition(Window window) = 0; //x and y position of mouse in pixel coordinates relative to window
 
 
         //Freedom
