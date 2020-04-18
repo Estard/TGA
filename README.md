@@ -110,6 +110,28 @@ struct RenderPassInfo{
   RasterizerConfig rasterizerConfig;          // Describes the configuration the Rasterizer, i.e blending, depth-buffer, culling and polygon draw mode
   InputLayout inputLayout;                    // Describes how the Bindings are organized
 ```
+##### VertexLayout
+The VertexLayout describes how a vertex in a vertex-buffer is laid out in memory.
+The VertexLayout struct consists of:
+- ```size_t vertexSize``` The size of the complete vertex in bytes
+- ```std::vector<VertexAttribute> vertexAttributes```The collection of attributes of the given vertex
+A VertexAttribute consists of:
+- ```size_t offset``` The offset of the attribute in bytes from the beginning of the vertex
+- ```Format format``` The format of this attribute. i.e a vec4/float4 would be Format::r32g32b32a32_sfloat
+	
+##### RasterizerConfig
+The RasterizerConfig determines  depth test, blending, culling and polygon-draw-mode
+the RasterizerConfig struct consists of:
+- ```CompareOperation depthCompareOp``` If and how the depth test is performed. CompareOperation::ignore to disable depth-testing otherwise the equivalent of ==, <, <=, >, >=
+- ```bool blendEnabled``` Whether blending is enabled
+- ```BlendFactor srcBlend```The factor with which the source image is weighted, by default BlendFactor::srcAlpha 
+- ```BlendFactor dstBlend```The factor with which the destination image is weighted, by default BlendFactor::oneMinusSrcAlpha
+- ```FrontFace frontFace```Which face of a given triangle is the front face, either FrontFace::clockwise or FrontFace::counterClockwise
+- ```CullMode cullMode```Which face to cull. Either CullMode::none, CullMode::front, CullMode::back or CullMode::all 
+- ```PolygonMode polygonMode```Whether trinagles should be filled (PolygonMode::fill) or only drawn as wireframe (PolygonMode::wireframe)
+##### InputLayout
+```TODO```
+
 The handle to a RenderPass is valid until a call to ```Interface::free(RenderPass renderPass);``` or until the descruction of the interface
 
 #### CommandBuffer
