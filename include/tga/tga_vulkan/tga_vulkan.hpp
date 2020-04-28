@@ -6,6 +6,8 @@
 
 namespace tga{
 
+    /** \brief The Interface Implementation over the Vulkan API
+    */
     class TGAVulkan : public Interface{
         public:
         void test(Window window);
@@ -31,13 +33,32 @@ namespace tga{
 
         void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset) override;
 
+        /** \copydoc Interface::backbufferCount(Window window)
+        */
         uint32_t backbufferCount(Window window) override;
+
+        /** \copydoc Interface::nextFrame(Window window)
+        */
         uint32_t nextFrame(Window window) override;
+
+        /** \copydoc Interface::present(Window window)
+        */
         void present(Window window) override;
+
+        /** \copydoc Interface::setWindowTitel(Window window, const std::string &title)
+        */
         void setWindowTitel(Window window, const std::string &title) override;
 
+        /** \copydoc Interface::windowShouldClose(Window window)
+        */
         bool windowShouldClose(Window window) override;
+
+        /** \copydoc Interface::keyDown(Window window)
+        */
         bool keyDown(Window window, Key key) override;
+
+        /** \copydoc Interface::mousePosition(Window window)
+        */
         std::pair<int, int> mousePosition(Window window) override;
 
         void free(Shader shader) override;

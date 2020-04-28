@@ -102,7 +102,7 @@ class Sandbox{
         auto fragShader = loadShader("shaders/rectangleFrag.spv",tga::ShaderType::fragment);
         auto textureShader = loadShader("shaders/textureFrag.spv",tga::ShaderType::fragment);
 
-        auto renderTex = tgav.createTexture({width,height,nullptr,width*height*4,tga::Format::r8g8b8a8_unorm});
+        auto renderTex = tgav.createTexture({width,height,tga::Format::r8g8b8a8_unorm,nullptr,width*height*4});
         auto window = tgav.createWindow({width,height,tga::PresentMode::vsync});
 
         auto firstPass = tgav.createRenderPass({{vertShader,fragShader},renderTex});
@@ -148,5 +148,5 @@ int main(void)
     {
         std::cerr << e.what() << '\n';
     }
-    
+    std::cout << "Shutdown"<<std::endl;
 }

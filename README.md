@@ -130,7 +130,13 @@ the RasterizerConfig struct consists of:
 - ```CullMode cullMode```Which face to cull. Either CullMode::none, CullMode::front, CullMode::back or CullMode::all 
 - ```PolygonMode polygonMode```Whether trinagles should be filled (PolygonMode::fill) or only drawn as wireframe (PolygonMode::wireframe)
 ##### InputLayout
-```TODO```
+The InputLayout describes how Bindings are organized.
+The InputLayout is a collection of SetLayouts.
+A SetLayout is a collection of BindingLayouts.
+The BindingLayout struct consists of:
+- ```BindingType type``` The type of Binding. Either BindingType::sampler2D for a 2D texture or BindingType::uniformBuffer for a uniform-buffer
+- ```uint32_t count``` The number of Bindings of the specified type. When count > 1 it is equivalent to an array of this BindingType in the shader programm 
+
 
 The handle to a RenderPass is valid until a call to ```Interface::free(RenderPass renderPass);``` or until the descruction of the interface
 
