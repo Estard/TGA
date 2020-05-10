@@ -45,6 +45,7 @@ namespace tga
         std::vector<vk::DescriptorSetLayout> setLayouts;
         vk::PipelineLayout pipelineLayout;
         vk::Pipeline pipeline;
+        vk::PipelineBindPoint bindPoint;
         vk::Extent2D area;
     };
 

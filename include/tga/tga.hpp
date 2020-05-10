@@ -408,9 +408,9 @@ namespace tga
         ShaderType type; /**<Type of Shader. Valid Types are ShaderType::vertex and ShaderType::fragment*/
         uint8_t const *src; /**<Pointer to the shader code. Dependant on the underlying API. For Vulkan this would be SPIR-V*/
         size_t srcSize; /**<Size of the shader code in bytes*/
-        ShaderInfo(ShaderType _type=ShaderType::undefined, uint8_t const *_src=nullptr, size_t _srcSize=0):
+        ShaderInfo(ShaderType _type, uint8_t const *_src, size_t _srcSize):
             type(_type),src(_src),srcSize(_srcSize){}
-        ShaderInfo(ShaderType _type=ShaderType::undefined, std::vector<uint8_t> const &_src = std::vector<uint8_t>()):
+        ShaderInfo(ShaderType _type, std::vector<uint8_t> const &_src):
             type(_type),src(_src.data()),srcSize(_src.size()){}
     };
     struct BufferInfo{
@@ -461,8 +461,8 @@ namespace tga
         VertexLayout vertexLayout; /**<Describes the format of the vertices in the vertex-buffer*/
         RasterizerConfig rasterizerConfig; /**<Describes the configuration the Rasterizer, i.e blending, depth-buffer, culling and polygon draw mode*/
         InputLayout inputLayout; /**<Describes how the Bindings are organized*/
-        RenderPassInfo(std::vector<Shader> const &_shaderStages = std::vector<Shader>(), 
-                    std::variant<Texture, Window> _renderTarget = Texture(), VertexLayout _vertexLayout = VertexLayout(),
+        RenderPassInfo(std::vector<Shader> const &_shaderStages, 
+                    std::variant<Texture, Window> _renderTarget, VertexLayout _vertexLayout = VertexLayout(),
                     ClearOperation _clearOperations = ClearOperation::none,
                     RasterizerConfig _rasterizerConfig = RasterizerConfig(), InputLayout _inputLayout = InputLayout()):
             shaderStages(_shaderStages),renderTarget(_renderTarget),clearOperations(_clearOperations),
@@ -487,7 +487,7 @@ namespace tga
         virtual RenderPass createRenderPass(const RenderPassInfo &renderPassInfo) = 0;
 
         //Commands
-        virtual void beginCommandBuffer(const CommandBufferInfo &commandBufferInfo) = 0;
+        virtual void beginCommandBuffer() = 0;
         virtual void setRenderPass(RenderPass renderPass, uint32_t framebufferIndex) = 0;
         virtual void bindVertexBuffer(Buffer buffer) = 0;
         virtual void bindIndexBuffer(Buffer buffer) = 0;

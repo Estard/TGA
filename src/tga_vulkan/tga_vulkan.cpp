@@ -216,13 +216,12 @@ namespace tga
             auto &renderTex = textures[*renderTarget];
             area = vk::Extent2D(renderTex.extent.width,renderTex.extent.height);
             if(!textureDepthBuffers.count(*renderTarget))
-                textureDepthBuffers.emplace(*renderTarget,createDepthBuffer(renderTex.extent.width,renderTex.extent.height));
+                textureDepthBuffers.emplace(*renderTarget,createDepthBuffer(area.width,area.height));
             auto &depthBuffer = textureDepthBuffers[*renderTarget];
             renderPass = makeRenderPass(renderTex.format,renderPassInfo.clearOperations,vk::ImageLayout::eGeneral);
             std::array<vk::ImageView, 2> attachments{ renderTex.imageView,depthBuffer.imageView };
             framebuffers.emplace_back(device.createFramebuffer({{}, renderPass, 
-                static_cast<uint32_t>(attachments.size()),attachments.data(),renderTex.extent.width,renderTex.extent.height,1}));
-            
+                static_cast<uint32_t>(attachments.size()),attachments.data(),area.width,area.height,1}));
         }
         else if(auto renderTarget = std::get_if<Window>(&renderPassInfo.renderTarget)){
             auto &renderWindow = wsi.getWindow(*renderTarget);
@@ -240,16 +239,15 @@ namespace tga
         std::vector<vk::DescriptorSetLayout> setLayouts = decodeInputLayout(renderPassInfo.inputLayout);
 
         auto pipelineLayout = device.createPipelineLayout({{},uint32_t(setLayouts.size()),setLayouts.data()});
-        auto pipeline = makePipeline(renderPassInfo,pipelineLayout,renderPass);
-        RenderPass_TV renderPass_tv{framebuffers,renderPass,setLayouts,pipelineLayout,pipeline,area};
+        auto [pipeline, bindPoint] = makePipeline(renderPassInfo,pipelineLayout,renderPass);
+        RenderPass_TV renderPass_tv{framebuffers,renderPass,setLayouts,pipelineLayout,pipeline,bindPoint,area};
         RenderPass handle = RenderPass(TgaRenderPass(VkRenderPass(renderPass)));
         renderPasses.emplace(handle,renderPass_tv);
         return handle;
     }
 
-    void TGAVulkan::beginCommandBuffer(const CommandBufferInfo &commandBufferInfo) 
+    void TGAVulkan::beginCommandBuffer() 
     {
-        (void)commandBufferInfo; //Warning Silencer
         if(currentRecording.cmdBuffer)
             throw std::runtime_error("Commandbuffer did not finish recording yet!");
         currentRecording.cmdBuffer = device.allocateCommandBuffers({graphicsCmdPool,vk::CommandBufferLevel::ePrimary,1})[0];
@@ -295,7 +293,7 @@ namespace tga
         uint32_t frameIndex = std::min(framebufferIndex,uint32_t(handle.framebuffers.size()-1));
         cmd.beginRenderPass({handle.renderPass,handle.framebuffers[frameIndex],{{},handle.area},
 			static_cast<uint32_t>(clearValues.size()),clearValues.data()},vk::SubpassContents::eInline);
-        cmd.bindPipeline(vk::PipelineBindPoint::eGraphics,handle.pipeline);
+        cmd.bindPipeline(handle.bindPoint,handle.pipeline);
         cmd.setViewport(0,{{0,0,float(handle.area.width),float(handle.area.height),0,1}});
         cmd.setScissor(0,{{{},handle.area}});
         currentRecording.renderPass = renderPass;
@@ -581,7 +579,7 @@ namespace tga
         return device.createGraphicsPipeline({},{{},uint32_t(shaderStages.size()),shaderStages.data(),&vertexInputInfo,&inputAssembly,
             nullptr,&viewportState,&rasterizer,&multisampling,&depthStencil,&colorBlending,&dynamicState,pipelineLayout,renderPass});
     }
-    vk::Pipeline TGAVulkan::makePipeline(const RenderPassInfo &renderPassInfo,vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass)
+    std::pair<vk::Pipeline, vk::PipelineBindPoint> TGAVulkan::makePipeline(const RenderPassInfo &renderPassInfo,vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass)
     {
         bool isValid = renderPassInfo.shaderStages.size()>0;
         bool vertexPresent{false};
@@ -591,7 +589,7 @@ namespace tga
             const auto& shader = shaders[stage];
             if(shader.type == ShaderType::compute){
                 if(renderPassInfo.shaderStages.size()==1){
-                    return device.createComputePipeline({},{{},{{},vk::ShaderStageFlagBits::eCompute,shader.module,"main"},pipelineLayout});
+                    return {device.createComputePipeline({},{{},{{},vk::ShaderStageFlagBits::eCompute,shader.module,"main"},pipelineLayout}),vk::PipelineBindPoint::eCompute};
                 }
                 else{
                     isValid = false;
@@ -613,7 +611,7 @@ namespace tga
         }
         if(!isValid)
             throw std::runtime_error("Invalid Shader Stage Configuration");
-        return makeGraphicsPipeline(renderPassInfo,pipelineLayout,renderPass);
+        return {makeGraphicsPipeline(renderPassInfo,pipelineLayout,renderPass),vk::PipelineBindPoint::eGraphics};
     }
 
     vk::CommandBuffer TGAVulkan::beginOneTimeCmdBuffer(vk::CommandPool &cmdPool)

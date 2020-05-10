@@ -10,7 +10,6 @@ namespace tga{
     */
     class TGAVulkan : public Interface{
         public:
-        void test(Window window);
         TGAVulkan();
         ~TGAVulkan();
 
@@ -21,7 +20,7 @@ namespace tga{
         InputSet createInputSet(const InputSetInfo &inputSetInfo) override;
         RenderPass createRenderPass(const RenderPassInfo &renderPassInfo) override;
 
-        void beginCommandBuffer(const CommandBufferInfo &commandBufferInfo) override;
+        void beginCommandBuffer() override;
         void setRenderPass(RenderPass renderPass, uint32_t frambufferIndex) override;
         void bindVertexBuffer(Buffer buffer) override;
         void bindIndexBuffer(Buffer buffer) override;
@@ -103,7 +102,7 @@ namespace tga{
         vk::RenderPass makeRenderPass(vk::Format colorFormat,ClearOperation clearOps, vk::ImageLayout layout);
         std::vector<vk::DescriptorSetLayout> decodeInputLayout(const InputLayout &inputLayout);
         vk::Pipeline makeGraphicsPipeline(const RenderPassInfo &renderPassInfo,vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass);
-        vk::Pipeline makePipeline(const RenderPassInfo &renderPassInfo,vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass);
+        std::pair<vk::Pipeline, vk::PipelineBindPoint> makePipeline(const RenderPassInfo &renderPassInfo,vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass);
         
 
         vk::CommandBuffer beginOneTimeCmdBuffer(vk::CommandPool &cmdPool);
