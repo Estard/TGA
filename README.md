@@ -94,6 +94,12 @@ struct InputSetInfo{
   uint32_t setIndex;              // The Index of this InputSet as defined in RenderPass.inputLayout  
   std::vector<Binding> bindings;  // The collection of Bindings in this InputSet
 ```
+##### Binding
+A Binding assigns a resource to a shader as declared in RenderPass::InputLayout::SetLayout
+The Binding struct consists of:
+- ```std::variant<Buffer, Texture> resource``` The handle the resource that should be bound
+- ```uint32_t slot```The index of the Binding in the shader
+- ```uint32_t arrayElement```The index of the Binding into the array if specified, zero by default
 The handle to an InputSet is valid until a call to ```Interface::free(InputSet inputSet);``` or until the descruction of the interface
 
 #### RenderPass
