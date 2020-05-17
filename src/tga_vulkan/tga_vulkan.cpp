@@ -124,10 +124,20 @@ namespace tga
     {
         vk::Format format = determineImageFormat(textureInfo.format);
         vk::Extent3D extent{textureInfo.width,textureInfo.height,1};
+
+        auto tiling = vk::ImageTiling::eOptimal;
+        auto usageFlags = vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst|vk::ImageUsageFlagBits::eTransferSrc;
+        auto formatProps = pDevice.getFormatProperties(format);
+        if(!(formatProps.optimalTilingFeatures&vk::FormatFeatureFlagBits::eColorAttachment)){
+            if(formatProps.linearTilingFeatures&vk::FormatFeatureFlagBits::eColorAttachment){
+                tiling = vk::ImageTiling::eLinear;
+                usageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
+            }
+        } else
+            usageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
+
         vk::Image image = device.createImage({{},vk::ImageType::e2D,format,
-            extent,1,1,vk::SampleCountFlagBits::e1,vk::ImageTiling::eOptimal,
-            vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst|vk::ImageUsageFlagBits::eTransferSrc|vk::ImageUsageFlagBits::eColorAttachment,
-            vk::SharingMode::eExclusive});
+            extent,1,1,vk::SampleCountFlagBits::e1,tiling,usageFlags,vk::SharingMode::eExclusive});
         auto mr = device.getImageMemoryRequirements(image);
         vk::DeviceMemory memory = device.allocateMemory({ mr.size, findMemoryType(mr.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal)});
         device.bindImageMemory(image,memory,0);
@@ -455,6 +465,7 @@ namespace tga
     vk::PhysicalDeviceFeatures TGAVulkan::getDeviceFeatures()
     {
         vk::PhysicalDeviceFeatures features;
+        features.fillModeNonSolid = VK_TRUE;
         return features;
     }
 
