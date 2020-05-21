@@ -40,6 +40,8 @@ namespace tga{
         bool keyDown(Window window, Key key) override;
         std::pair<int, int> mousePosition(Window window) override;
 
+        std::pair<uint32_t, uint32_t> screenResolution() override;
+
 
 
         //Extras

@@ -534,6 +534,11 @@ namespace tga
         */
         virtual std::pair<int, int> mousePosition(Window window) = 0;
 
+        /** \brief Resolution of the primary monitor in pixels
+         * \return pair (width,height) in pixel
+        */
+        virtual std::pair<uint32_t, uint32_t> screenResolution() = 0;
+
 
         //Freedom
         virtual void free(Shader shader) = 0;

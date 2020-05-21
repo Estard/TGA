@@ -125,16 +125,8 @@ namespace tga
         vk::Format format = determineImageFormat(textureInfo.format);
         vk::Extent3D extent{textureInfo.width,textureInfo.height,1};
 
-        auto tiling = vk::ImageTiling::eOptimal;
-        auto usageFlags = vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst|vk::ImageUsageFlagBits::eTransferSrc;
-        auto formatProps = pDevice.getFormatProperties(format);
-        if(!(formatProps.optimalTilingFeatures&vk::FormatFeatureFlagBits::eColorAttachment)){
-            if(formatProps.linearTilingFeatures&vk::FormatFeatureFlagBits::eColorAttachment){
-                tiling = vk::ImageTiling::eLinear;
-                usageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
-            }
-        } else
-            usageFlags |= vk::ImageUsageFlagBits::eColorAttachment;
+        auto [tiling,usageFlags] = determineImageFeatures(format);
+        
 
         vk::Image image = device.createImage({{},vk::ImageType::e2D,format,
             extent,1,1,vk::SampleCountFlagBits::e1,tiling,usageFlags,vk::SharingMode::eExclusive});
@@ -378,6 +370,11 @@ namespace tga
     {
         return wsi.mousePosition(window);
     }
+
+    std::pair<uint32_t, uint32_t> TGAVulkan::screenResolution()
+    {
+        return wsi.screenResolution();
+    }
     
     void TGAVulkan::free(Shader shader) 
     {   
@@ -489,6 +486,25 @@ namespace tga
         vk::DeviceMemory memory = device.allocateMemory({ mr.size, findMemoryType(mr.memoryTypeBits, properties)});
         device.bindBufferMemory(buffer, memory, 0);
         return {buffer,memory};
+    }
+
+    std::pair<vk::ImageTiling, vk::ImageUsageFlags> TGAVulkan::determineImageFeatures(vk::Format &format)
+    {
+        auto tiling = vk::ImageTiling::eOptimal;
+        auto usageFlags = vk::ImageUsageFlagBits::eSampled|vk::ImageUsageFlagBits::eTransferDst|
+        vk::ImageUsageFlagBits::eTransferSrc|vk::ImageUsageFlagBits::eColorAttachment;
+        auto formatProps = pDevice.getFormatProperties(format);
+        if(!(formatProps.optimalTilingFeatures&vk::FormatFeatureFlagBits::eSampledImage))
+            throw std::runtime_error("[TGA Vulkan] Chosen Image Format: " + vk::to_string(format) + " cannot be used as Texture on this System");
+        if(!(formatProps.optimalTilingFeatures&vk::FormatFeatureFlagBits::eTransferDst))
+            throw std::runtime_error("[TGA Vulkan] Chosen Image Format: " + vk::to_string(format) + " cannot be written to on this System");
+        if(!(formatProps.optimalTilingFeatures&vk::FormatFeatureFlagBits::eColorAttachment) || 
+            !(formatProps.optimalTilingFeatures&vk::FormatFeatureFlagBits::eTransferSrc)){
+            std::cerr<<"[TGA Vulkan] Warning: Chosen Image Format: "<<vk::to_string(format)<< " cannot be used as a Framebuffer on this System\n";
+            usageFlags = usageFlags &(~vk::ImageUsageFlagBits::eColorAttachment); //Can't write to it
+            usageFlags = usageFlags &(~vk::ImageUsageFlagBits::eTransferSrc); //No write means no read necessary
+        }
+        return {tiling, usageFlags};
     }
 
     vk::Format TGAVulkan::findDepthFormat()

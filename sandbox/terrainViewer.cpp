@@ -17,25 +17,25 @@ struct Configuration{
     std::string fragShader = "shaders/TerrainViewerFrag.spv";
 };
 
-struct PixelRGB{
-    uint8_t r,g,b;
+struct PixelRGBA{
+    uint8_t r,g,b,a;
 };
 
 struct ImageRGB{
     uint32_t width,height;
-    std::vector<PixelRGB> pixels;
+    std::vector<PixelRGBA> pixels;
 };
 
 ImageRGB loadImage(const std::string file)
 {
 	int texWidth, texHeight, texChannels;
-    	stbi_uc* pixels = stbi_load(file.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb);
+    	stbi_uc* pixels = stbi_load(file.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	if (!pixels) 
     	throw std::runtime_error("[TerrainViewer] Error: failed to load image! " + file);
 	
-	PixelRGB *data = reinterpret_cast<PixelRGB*>(pixels);
+	PixelRGBA *data = reinterpret_cast<PixelRGBA*>(pixels);
 	size_t len = texWidth*texHeight;
-	ImageRGB i = {static_cast<uint32_t>(texWidth),static_cast<uint32_t>(texHeight),std::vector<PixelRGB>(data,data+len)};
+	ImageRGB i = {static_cast<uint32_t>(texWidth),static_cast<uint32_t>(texHeight),std::vector<PixelRGBA>(data,data+len)};
 	stbi_image_free(pixels);
 	return i;
 }
@@ -66,7 +66,7 @@ Configuration parseArgs(int argc, char** argv)
         else if(argument == "frag")
             config.fragShader = parameter;
         else if(argument == "help"||argument == "-help")
-            std::cerr << "[TerrainViewer] Usage: ./terrainViewer -h heightmap -n normalmap -c colormap\n";
+            std::cerr << "[TerrainViewer] Usage: ./terrainViewer -h heightmap -n normalmap -c colormap -vert vertexShader -frag fragmentShader\n";
         else
             std::cerr << "[TerrainViewer] Warning: unknown argumente: " << argument <<" consumes parameter "<< parameter<<'\n';
         
@@ -121,12 +121,12 @@ class TerrainViewer{
         }
         void uploadTextures()
         {
-            heightmapTex = tgav.createTexture({heightmap.width,heightmap.height,tga::Format::r8g8b8_unorm,
-            (uint8_t*)heightmap.pixels.data(),heightmap.pixels.size()*sizeof(PixelRGB),tga::SamplerMode::linear,tga::RepeatMode::clampEdge});
-            normalmapTex = tgav.createTexture({normalmap.width,normalmap.height,tga::Format::r8g8b8_unorm,
-            (uint8_t*)normalmap.pixels.data(),normalmap.pixels.size()*sizeof(PixelRGB),tga::SamplerMode::linear,tga::RepeatMode::clampEdge});
-            colormapTex = tgav.createTexture({colormap.width,colormap.height,tga::Format::r8g8b8_unorm,
-            (uint8_t*)colormap.pixels.data(),colormap.pixels.size()*sizeof(PixelRGB),tga::SamplerMode::linear,tga::RepeatMode::repeate});
+            heightmapTex = tgav.createTexture({heightmap.width,heightmap.height,tga::Format::r8g8b8a8_unorm,
+            (uint8_t*)heightmap.pixels.data(),heightmap.pixels.size()*sizeof(PixelRGBA),tga::SamplerMode::linear,tga::RepeatMode::clampEdge});
+            normalmapTex = tgav.createTexture({normalmap.width,normalmap.height,tga::Format::r8g8b8a8_unorm,
+            (uint8_t*)normalmap.pixels.data(),normalmap.pixels.size()*sizeof(PixelRGBA),tga::SamplerMode::linear,tga::RepeatMode::clampEdge});
+            colormapTex = tgav.createTexture({colormap.width,colormap.height,tga::Format::r8g8b8a8_unorm,
+            (uint8_t*)colormap.pixels.data(),colormap.pixels.size()*sizeof(PixelRGBA),tga::SamplerMode::linear,tga::RepeatMode::repeate});
         }
         void createIndexBuffer(){
             uint32_t width = heightmap.width;
@@ -154,7 +154,8 @@ class TerrainViewer{
 
             vertShader = loadShader(tgav,config.vertShader,tga::ShaderType::vertex);
             fragShader = loadShader(tgav,config.fragShader,tga::ShaderType::fragment);
-            window = tgav.createWindow({1600,900,tga::PresentMode::vsync});
+            auto [w,h] = tgav.screenResolution();
+            window = tgav.createWindow({w,h,tga::PresentMode::vsync});
 
             tga::RenderPassInfo rpInfo = {{vertShader,fragShader},window};
             rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},

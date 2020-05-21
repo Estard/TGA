@@ -60,6 +60,10 @@ namespace tga{
         */
         std::pair<int, int> mousePosition(Window window) override;
 
+        /** \copydoc Interface::screenResolution()
+        */
+        std::pair<uint32_t, uint32_t> screenResolution() override;
+
         void free(Shader shader) override;
         void free(Buffer buffer) override;
         void free(Texture texture) override;
@@ -97,6 +101,7 @@ namespace tga{
         vk::CommandPool createCommandPool(uint32_t queueFamily, vk::CommandPoolCreateFlags flags = vk::CommandPoolCreateFlags());
         uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
         Buffer_TV allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+        std::pair<vk::ImageTiling, vk::ImageUsageFlags> determineImageFeatures(vk::Format &format);
         vk::Format findDepthFormat();
         DepthBuffer_TV createDepthBuffer(uint32_t width, uint32_t height);
         vk::RenderPass makeRenderPass(vk::Format colorFormat,ClearOperation clearOps, vk::ImageLayout layout);

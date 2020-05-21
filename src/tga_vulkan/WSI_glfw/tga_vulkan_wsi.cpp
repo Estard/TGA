@@ -32,11 +32,26 @@ namespace tga
         return extensions;
     }
 
+    std::pair<uint32_t, uint32_t> VulkanWSI::screenResolution()
+    {
+        const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+        return {static_cast<uint32_t>(mode->width),static_cast<uint32_t>(mode->height)};
+    }
+
     Window VulkanWSI::createWindow(const WindowInfo &windowInfo)
     {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-        GLFWwindow* glfwWindow = glfwCreateWindow( int(windowInfo.width),int(windowInfo.height), "TGA VULKAN", nullptr, nullptr);
+
+        int width = int(windowInfo.width);
+        int height = int(windowInfo.height);
+        if(!width || !height){
+            const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+            width = mode->width;
+            height = mode->height;
+        }
+
+        GLFWwindow* glfwWindow = glfwCreateWindow( width,height, "TGA VULKAN", nullptr, nullptr);
 
         VkSurfaceKHR vkSurface;
         if (glfwCreateWindowSurface(instance, glfwWindow, nullptr, &vkSurface) != VK_SUCCESS) {
