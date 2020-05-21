@@ -27,3 +27,7 @@ jobs:
       with:
         name: sandbox
         path: sandbox/sandbox
+    - uses: actions/upload-artifact@v1
+      with:
+        name: terrainViewer
+        path: sandbox/terrainViewer
