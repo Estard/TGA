@@ -52,9 +52,9 @@ The TextureInfo struct requires the following parameters:
 struct TextureInfo{
   uint32_t width;           // Width of the Texture in pixels
   uint32_t height;          // Height of the Texture in pixels
+  Format format;            // Format of the pixels. Example: For 8 bit per Pixel with red, green and blue channel use Format::r8g8b8_unorm. For a list of all formats refer to tga::Format
   uint8_t const *data;      // Data of the Texture. Pass a nullptr to create a texture with undefined content
   size_t dataSize;          // Size of the texture data in bytes
-  Format format;            // Format of the pixels. Example: For 8 bit per Pixel with red, green and blue channel use Format::r8g8b8_unorm. For a list of all formats refer to tga::Format
   SamplerMode samplerMode;  // How the Texture is sampled. Valid SamplerModes are SamplerMode::nearest (default) and   SamplerMode::linear
   RepeatMode repeatMode;    // How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeate modes refer to tga::RepeatMode
 ```
