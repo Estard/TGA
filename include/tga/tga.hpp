@@ -498,6 +498,8 @@ namespace tga
         virtual void execute(CommandBuffer commandBuffer) = 0;
 
         virtual void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset) = 0;
+        virtual std::vector<uint8_t> readback(Buffer buffer) = 0;
+        virtual std::vector<uint8_t> readback(Texture texture) = 0;
 
         //Window functions
 

@@ -293,13 +293,49 @@ class Sandbox{
     std::uniform_real_distribution<double> unif;
 };
 
+struct GPUMemcopy{
+
+    std::array<float, 32> buffer={};
+
+    void run()
+    {
+        for(size_t i  = 0; i < buffer.size();i++)
+            buffer[i] = float(i);
+        tga::TGAVulkan tgav;
+        auto buf = tgav.createBuffer({tga::BufferUsage::uniform,(uint8_t*)buffer.data(),buffer.size()*sizeof(buffer[0])});
+
+        for(size_t i  = 0; i < buffer.size();i++)
+            buffer[i]++;
+        auto readBack = tgav.readback(buf);
+        float *readBackFloat = (float*)readBack.data();
+
+        for(size_t i  = 0; i < buffer.size();i++){
+            std::cout << buffer[i] <<' ';
+        }
+        std::cout <<'\n';
+        for(size_t i  = 0; i < buffer.size();i++){
+            std::cout << readBackFloat[i] <<' ';
+        }
+        std::cout <<'\n';
+        auto tex  =tgav.createTexture({4,8,tga::Format::r32_sfloat,(uint8_t*)buffer.data(),buffer.size()*sizeof(buffer[0])});
+        readBack = tgav.readback(tex);
+        readBackFloat = (float*)readBack.data();   
+        for(size_t i  = 0; i < buffer.size();i++){
+            std::cout << readBackFloat[i] <<' ';
+        }
+        std::cout <<'\n';
+                 
+    }
+};
+
 
 
 int main(void)
 {
     try
     {
-        Sandbox sb;
+        GPUMemcopy sb;
+        //Sandbox sb;
         sb.run();
     }
     catch(const std::exception& e)

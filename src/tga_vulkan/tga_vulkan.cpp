@@ -325,6 +325,52 @@ namespace tga
         fillBuffer(dataSize,data,offset,handle.buffer);
     }
 
+    std::vector<uint8_t> TGAVulkan::readback(Buffer buffer)
+    {
+        auto &handle = buffers[buffer];
+        auto mr = device.getBufferMemoryRequirements(handle.buffer);
+        std::vector<uint8_t> rbBuffer{};
+        rbBuffer.resize(mr.size);
+
+        auto staging = allocateBuffer(mr.size,vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+
+        auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
+        vk::BufferCopy region{0,0,mr.size};
+        copyCmdBuffer.copyBuffer(handle.buffer,staging.buffer,{region});
+        endOneTimeCmdBuffer(copyCmdBuffer,transferCmdPool,transferQueue);
+        auto mapping = device.mapMemory(staging.memory,0,mr.size,{});
+        std::memcpy(rbBuffer.data(),mapping,mr.size);
+        device.unmapMemory(staging.memory);
+        device.destroy(staging.buffer);
+        device.free(staging.memory);
+        return rbBuffer; 
+    }
+
+    std::vector<uint8_t> TGAVulkan::readback(Texture texture)
+    {
+        auto &handle = textures[texture];
+        auto mr = device.getImageMemoryRequirements(handle.image);
+        std::vector<uint8_t> rbBuffer{};
+        rbBuffer.resize(mr.size);
+
+        auto staging = allocateBuffer(mr.size,vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+
+        auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
+        transitionImageLayout(copyCmdBuffer,handle.image,vk::ImageLayout::eGeneral,vk::ImageLayout::eTransferSrcOptimal);
+        vk::BufferImageCopy region{0,0,0,{vk::ImageAspectFlagBits::eColor,0,0,1},{},handle.extent};
+        copyCmdBuffer.copyImageToBuffer(handle.image,vk::ImageLayout::eTransferSrcOptimal,staging.buffer,{region});
+        transitionImageLayout(copyCmdBuffer,handle.image,vk::ImageLayout::eTransferSrcOptimal,vk::ImageLayout::eGeneral);
+        endOneTimeCmdBuffer(copyCmdBuffer,transferCmdPool,transferQueue);
+        auto mapping = device.mapMemory(staging.memory,0,mr.size,{});
+        std::memcpy(rbBuffer.data(),mapping,mr.size);
+        device.unmapMemory(staging.memory);
+        device.destroy(staging.buffer);
+        device.free(staging.memory);
+        return rbBuffer; 
+    }
+
     uint32_t TGAVulkan::backbufferCount(Window window) 
     {
         return static_cast<uint32_t>(wsi.getWindow(window).imageViews.size());
@@ -725,7 +771,7 @@ namespace tga
     {
         if(usage == BufferUsage::undefined)
             throw std::runtime_error("Buffer usage is undefined!");
-        vk::BufferUsageFlags usageFlags = vk::BufferUsageFlagBits::eTransferDst;
+        vk::BufferUsageFlags usageFlags = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc;
         if(usage & tga::BufferUsage::uniform){
             usageFlags |= vk::BufferUsageFlagBits::eUniformBuffer;
         }

@@ -31,6 +31,8 @@ namespace tga{
         void execute(CommandBuffer commandBuffer) override;
 
         void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset) override;
+        std::vector<uint8_t> readback(Buffer buffer) override;
+        std::vector<uint8_t> readback(Texture texture) override;
 
         /** \copydoc Interface::backbufferCount(Window window)
         */
