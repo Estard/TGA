@@ -1,6 +1,6 @@
 #include "tga/tga.hpp"
 #include "tga/tga_vulkan/tga_vulkan.hpp"
-#include "tga/tga_math.h"
+#include "tga/tga_math.hpp"
 #include <chrono>
 
 #define STB_IMAGE_IMPLEMENTATION

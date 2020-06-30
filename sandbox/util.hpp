@@ -9,7 +9,7 @@
 #include <future>
 #include <list>
 
-#include "tga/tga_math.h"
+#include "tga/tga_math.hpp"
 
 
 //  Copyright (C) 2011 Ashima Arts. All rights reserved.
