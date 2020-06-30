@@ -233,7 +233,8 @@ namespace tga
         undefined = 0x0,
         uniform = 0x1,
         vertex = 0x2,
-        index = 0x4
+        index = 0x4,
+        storage = 0x8
     };
     inline BufferUsage operator|(BufferUsage a, BufferUsage b)
     {
@@ -325,7 +326,8 @@ namespace tga
 
     enum class BindingType{
         uniformBuffer,
-        sampler2D
+        sampler2D,
+        storageBuffer
     };
 
     enum class CullMode{
@@ -493,7 +495,8 @@ namespace tga
         virtual void bindIndexBuffer(Buffer buffer) = 0;
         virtual void bindInputSet(InputSet inputSet) = 0;
         virtual void draw(uint32_t vertexCount, uint32_t firstVertex) = 0;
-        virtual void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset) = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+        virtual void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset) = 0;
+        virtual void dispatch(uint32_t groupCountX,uint32_t groupCountY,uint32_t groupCountZ) = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
         virtual CommandBuffer endCommandBuffer() = 0;
         virtual void execute(CommandBuffer commandBuffer) = 0;
 

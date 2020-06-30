@@ -170,17 +170,26 @@ namespace tga
     }
     InputSet TGAVulkan::createInputSet(const InputSetInfo &inputSetInfo) 
     {
-        uint32_t bufferCount = 0;
+        uint32_t uniformCount = 0;
+        uint32_t storageCount = 0;
         uint32_t textureCount = 0;
         for(auto &binding : inputSetInfo.bindings){
-            if(std::get_if<Buffer>(&binding.resource))
-                bufferCount++;
+            if(auto handle = std::get_if<Buffer>(&binding.resource))
+            {
+                const auto &buffer = buffers[*handle];
+                if(buffer.flags&vk::BufferUsageFlagBits::eUniformBuffer)
+                    uniformCount++;
+                if(buffer.flags&vk::BufferUsageFlagBits::eStorageBuffer)
+                    storageCount++;
+            } 
             else
                 textureCount++;
         }
         std::vector<vk::DescriptorPoolSize> poolSizes{};
-        if(bufferCount>0)
-            poolSizes.emplace_back(vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,bufferCount));
+        if(uniformCount>0)
+            poolSizes.emplace_back(vk::DescriptorPoolSize(vk::DescriptorType::eUniformBuffer,uniformCount));
+        if(storageCount>0)
+            poolSizes.emplace_back(vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer,storageCount));
         if(textureCount>0)
             poolSizes.emplace_back(vk::DescriptorPoolSize(vk::DescriptorType::eCombinedImageSampler,textureCount));
         
@@ -193,7 +202,8 @@ namespace tga
                 auto &buffer = buffers[*resource];
                 vk::DescriptorBufferInfo bufferInfo{buffer.buffer,0,VK_WHOLE_SIZE};
                 vk::WriteDescriptorSet writeSet{descSet,binding.slot,binding.arrayElement,1,
-                vk::DescriptorType::eUniformBuffer,{},&bufferInfo};
+                (buffer.flags&vk::BufferUsageFlagBits::eStorageBuffer?vk::DescriptorType::eStorageBuffer:vk::DescriptorType::eUniformBuffer)
+                ,{},&bufferInfo};
                 device.updateDescriptorSets({writeSet},{});
             }    
             else if(auto resource = std::get_if<Texture>(&binding.resource)){
@@ -269,8 +279,9 @@ namespace tga
     void TGAVulkan::bindInputSet(InputSet inputSet)
     {
         auto &handle = inputSets[inputSet];
+
         auto &renderPass = renderPasses[currentRecording.renderPass];
-        currentRecording.cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,renderPass.pipelineLayout,0,1,&handle.descriptorSet,0,nullptr);
+        currentRecording.cmdBuffer.bindDescriptorSets(renderPass.bindPoint,renderPass.pipelineLayout,0,1,&handle.descriptorSet,0,nullptr);
     }
     void TGAVulkan::draw(uint32_t vertexCount, uint32_t firstVertex) 
     {
@@ -280,10 +291,16 @@ namespace tga
     {
         currentRecording.cmdBuffer.drawIndexed(indexCount,1,firstIndex,vertexOffset,0);
     }
+    void TGAVulkan::dispatch(uint32_t groupCountX,uint32_t groupCountY,uint32_t groupCountZ)
+    {
+        currentRecording.cmdBuffer.dispatch(groupCountX,groupCountY,groupCountZ);
+    }
+    
     void TGAVulkan::setRenderPass(RenderPass renderPass, uint32_t framebufferIndex) 
     {
         if(currentRecording.renderPass){
-            currentRecording.cmdBuffer.endRenderPass();
+            if(renderPasses[currentRecording.renderPass].bindPoint == vk::PipelineBindPoint::eGraphics)
+                currentRecording.cmdBuffer.endRenderPass();
         }
         auto &cmd = currentRecording.cmdBuffer;
         auto &handle = renderPasses[renderPass];
@@ -292,18 +309,26 @@ namespace tga
         clearValues[0] = vk::ClearColorValue(colorClear);
         clearValues[1] = vk::ClearDepthStencilValue(1.f, 0);
 
-        uint32_t frameIndex = std::min(framebufferIndex,uint32_t(handle.framebuffers.size()-1));
-        cmd.beginRenderPass({handle.renderPass,handle.framebuffers[frameIndex],{{},handle.area},
-			static_cast<uint32_t>(clearValues.size()),clearValues.data()},vk::SubpassContents::eInline);
-        cmd.bindPipeline(handle.bindPoint,handle.pipeline);
-        cmd.setViewport(0,{{0,0,float(handle.area.width),float(handle.area.height),0,1}});
-        cmd.setScissor(0,{{{},handle.area}});
+        if(handle.bindPoint == vk::PipelineBindPoint::eGraphics){
+            uint32_t frameIndex = std::min(framebufferIndex,uint32_t(handle.framebuffers.size()-1));
+            cmd.beginRenderPass({handle.renderPass,handle.framebuffers[frameIndex],{{},handle.area},
+		    	static_cast<uint32_t>(clearValues.size()),clearValues.data()},vk::SubpassContents::eInline);
+            cmd.bindPipeline(handle.bindPoint,handle.pipeline);
+            cmd.setViewport(0,{{0,0,float(handle.area.width),float(handle.area.height),0,1}});
+            cmd.setScissor(0,{{{},handle.area}});
+        }
+        else
+        {
+            cmd.bindPipeline(handle.bindPoint,handle.pipeline);
+        }
+        
         currentRecording.renderPass = renderPass;
     }
     CommandBuffer TGAVulkan::endCommandBuffer() 
     {
         if(currentRecording.renderPass){
-            currentRecording.cmdBuffer.endRenderPass();
+            if(renderPasses[currentRecording.renderPass].bindPoint == vk::PipelineBindPoint::eGraphics)
+                currentRecording.cmdBuffer.endRenderPass();
             currentRecording.renderPass = RenderPass();
         }
         currentRecording.cmdBuffer.end();
@@ -531,7 +556,7 @@ namespace tga
         auto mr = device.getBufferMemoryRequirements(buffer);
         vk::DeviceMemory memory = device.allocateMemory({ mr.size, findMemoryType(mr.memoryTypeBits, properties)});
         device.bindBufferMemory(buffer, memory, 0);
-        return {buffer,memory};
+        return {buffer,memory,usage};
     }
 
     std::pair<vk::ImageTiling, vk::ImageUsageFlags> TGAVulkan::determineImageFeatures(vk::Format &format)
@@ -781,6 +806,9 @@ namespace tga
         if(usage & tga::BufferUsage::index){
             usageFlags |= vk::BufferUsageFlagBits::eIndexBuffer;
         }
+        if(usage & tga::BufferUsage::storage){
+            usageFlags |= vk::BufferUsageFlagBits::eStorageBuffer;
+        }
         return usageFlags;
     }
 
@@ -934,6 +962,7 @@ namespace tga
         {
             case BindingType::uniformBuffer: return vk::DescriptorType::eUniformBuffer;
             case BindingType::sampler2D: return vk::DescriptorType::eCombinedImageSampler;
+            case BindingType::storageBuffer: return vk::DescriptorType::eStorageBuffer;
             default: return vk::DescriptorType::eInputAttachment;
         }
    }

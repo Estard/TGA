@@ -15,6 +15,7 @@ namespace tga
     struct Buffer_TV{
         vk::Buffer buffer;
         vk::DeviceMemory memory;
+        vk::BufferUsageFlags flags;
     };
 
     struct Texture_TV{
