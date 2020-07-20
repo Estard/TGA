@@ -109,7 +109,7 @@ A handle to a RenderPass is created with a call to ```Interface::createRenderPas
 The RenderPassInfo struct requires the following parameters:
 ```
 struct RenderPassInfo{
-  std::vector<Shader> shaderStages;           // The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.)
+  std::vector<Shader> shaderStages;           // The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.). If using a compute shader it has to be the only stader stage
   std::variant<Texture, Window> renderTarget; // Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time 
   ClearOperation clearOperations;             // Determines if the renderTarget and/or depth-buffer should be cleared
   VertexLayout vertexLayout;                  // Describes the format of the vertices in the vertex-buffer
@@ -159,6 +159,7 @@ Inbetween _beginCommandBuffer_ and _endCommandBuffer_ you can call the following
 - ```bindInputSet(InputSet inputSet)```Bind all Bindings specified in the InputSet 
 - ```draw(uint32_t vertexCount, uint32_t firstVertex)```Issue a draw command with the number of vertices and an offset into the currently bound vertex-buffer
 - ```drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset)```Issue am indexed draw command with the number of indices, an offset into the currently bound index-buffer and an offset into the currently bound vertex-buffer
+- ```dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)```Dispatches a compute shader with the specified number of work groups in each each dimension. Each dimension cannot be zero
 
 To execute a CommandBuffer call ```Interface::execute(CommandBuffer commandBuffer)```
 

@@ -457,7 +457,7 @@ namespace tga
     };
 
     struct RenderPassInfo{
-        std::vector<Shader> shaderStages; /**<The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.)*/
+        std::vector<Shader> shaderStages; /**<The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.). If using a compute shader it has to be the only stader stage*/
         std::variant<Texture, Window> renderTarget; /**<Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time*/
         ClearOperation clearOperations; /**<Determines if the renderTarget and/or depth-buffer should be cleared*/
         VertexLayout vertexLayout; /**<Describes the format of the vertices in the vertex-buffer*/
@@ -496,7 +496,7 @@ namespace tga
         virtual void bindInputSet(InputSet inputSet) = 0;
         virtual void draw(uint32_t vertexCount, uint32_t firstVertex) = 0;
         virtual void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset) = 0;
-        virtual void dispatch(uint32_t groupCountX,uint32_t groupCountY,uint32_t groupCountZ) = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+        virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
         virtual CommandBuffer endCommandBuffer() = 0;
         virtual void execute(CommandBuffer commandBuffer) = 0;
 

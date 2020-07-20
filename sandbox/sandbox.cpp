@@ -317,14 +317,62 @@ struct GPUMemcopy{
             std::cout << readBackFloat[i] <<' ';
         }
         std::cout <<'\n';
-        auto tex  =tgav.createTexture({4,8,tga::Format::r32_sfloat,(uint8_t*)buffer.data(),buffer.size()*sizeof(buffer[0])});
+        auto tex = tgav.createTexture({4,8,tga::Format::r32_sfloat,(uint8_t*)buffer.data(),buffer.size()*sizeof(buffer[0])});
         readBack = tgav.readback(tex);
         readBackFloat = (float*)readBack.data();   
         for(size_t i  = 0; i < buffer.size();i++){
             std::cout << readBackFloat[i] <<' ';
         }
-        std::cout <<'\n';
-                 
+        std::cout <<'\n';    
+    }
+};
+
+class ComputeIndexBuffer{
+
+    uint32_t resX,resY;
+    tga::TGAVulkan tgav;
+    std::vector<uint32_t> indices;
+    public:
+
+    ComputeIndexBuffer(uint32_t _resX, uint32_t _resY):resX(_resX),resY(_resY),tgav(tga::TGAVulkan()),indices((resX-1)*(resY-1)*6,-1)
+    {
+
+    }
+
+    void run()
+    {
+        const std::array<uint32_t,2> dim{resX,resY};
+        auto data = tgav.createBuffer({tga::BufferUsage::uniform,(uint8_t*)dim.data(),dim.size()*sizeof(uint32_t)});
+        auto buf = tgav.createBuffer({tga::BufferUsage::storage,(uint8_t*)indices.data(),indices.size()*sizeof(uint32_t)});
+        auto shader = loadShader(tgav,"shaders/indexComp.spv",tga::ShaderType::compute);
+        auto tex = tgav.createTexture({1,1,tga::Format::r32_sfloat});
+        tga::RenderPassInfo rpInfo{{shader},tex};
+        rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::uniformBuffer},{tga::BindingType::storageBuffer}}});
+        auto pass = tgav.createRenderPass(rpInfo);
+        auto inputSet = tgav.createInputSet({pass,0,{{data,0},{buf,1}}});
+        tgav.beginCommandBuffer();
+        tgav.setRenderPass(pass,0);
+        tgav.bindInputSet(inputSet);
+        tgav.dispatch(resX-1,resY-1,1);
+        auto cmd = tgav.endCommandBuffer();
+        
+        tgav.execute(cmd);
+        auto res = tgav.readback(buf);
+        
+        if(res.size()>=(indices.size()*sizeof(uint32_t)))
+        {
+            std::memcpy(indices.data(),res.data(),indices.size()*sizeof(uint32_t));
+            for(size_t i = 0; i < indices.size();i++)
+            {
+                std::cout << indices[i]<<' ';
+                if((i+1)%6==0&&i>0)
+                    std::cout <<'\n';
+            }
+        }
+        else
+        {
+            std::cerr <<"readback wasn't successful\n";
+        }
     }
 };
 
@@ -334,8 +382,7 @@ int main(void)
 {
     try
     {
-        GPUMemcopy sb;
-        //Sandbox sb;
+        ComputeIndexBuffer sb{16,16};
         sb.run();
     }
     catch(const std::exception& e)
