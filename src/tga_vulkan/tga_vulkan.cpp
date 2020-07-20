@@ -352,20 +352,19 @@ namespace tga
 
     std::vector<uint8_t> TGAVulkan::readback(Buffer buffer)
     {
-        auto &handle = buffers[buffer];
-        auto mr = device.getBufferMemoryRequirements(handle.buffer);
+        auto &handle = buffers[buffer]; 
         std::vector<uint8_t> rbBuffer{};
-        rbBuffer.resize(mr.size);
+        rbBuffer.resize(handle.size);
 
-        auto staging = allocateBuffer(mr.size,vk::BufferUsageFlagBits::eTransferDst,
+        auto staging = allocateBuffer(handle.size,vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
 
         auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
-        vk::BufferCopy region{0,0,mr.size};
+        vk::BufferCopy region{0,0,handle.size};
         copyCmdBuffer.copyBuffer(handle.buffer,staging.buffer,{region});
         endOneTimeCmdBuffer(copyCmdBuffer,transferCmdPool,transferQueue);
-        auto mapping = device.mapMemory(staging.memory,0,mr.size,{});
-        std::memcpy(rbBuffer.data(),mapping,mr.size);
+        auto mapping = device.mapMemory(staging.memory,0,handle.size,{});
+        std::memcpy(rbBuffer.data(),mapping,handle.size);
         device.unmapMemory(staging.memory);
         device.destroy(staging.buffer);
         device.free(staging.memory);
@@ -556,7 +555,7 @@ namespace tga
         auto mr = device.getBufferMemoryRequirements(buffer);
         vk::DeviceMemory memory = device.allocateMemory({ mr.size, findMemoryType(mr.memoryTypeBits, properties)});
         device.bindBufferMemory(buffer, memory, 0);
-        return {buffer,memory,usage};
+        return {buffer,memory,usage, size};
     }
 
     std::pair<vk::ImageTiling, vk::ImageUsageFlags> TGAVulkan::determineImageFeatures(vk::Format &format)
