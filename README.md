@@ -149,8 +149,7 @@ The handle to a RenderPass is valid until a call to ```Interface::free(RenderPas
 #### CommandBuffer
 A CommandBuffer is a list of instructions to be executed by the GPU.
 
-A CommandBuffer is started with a call to ```Interface::beginCommandBuffer(const CommandBufferInfo &commandBufferInfo)```
-_Note that the CommandBufferInfo struct is currently empty_
+A CommandBuffer is started with a call to ```Interface::beginCommandBuffer()```
 The handle to a CommandBuffer can then be created with a call to ```Interface::endCommandBuffer()```
 Inbetween _beginCommandBuffer_ and _endCommandBuffer_ you can call the following commands to be recorded in the CommandBuffer:
 - ```setRenderPass(RenderPass renderPass, uint32_t framebufferIndex)``` Configure the Pipeline to use the specified RenderPass and target the specified framebuffer of RenderPass.renderTarget
