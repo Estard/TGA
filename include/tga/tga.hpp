@@ -460,15 +460,15 @@ namespace tga
         std::vector<Shader> shaderStages; /**<The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.). If using a compute shader it has to be the only stader stage*/
         std::variant<Texture, Window> renderTarget; /**<Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time*/
         ClearOperation clearOperations; /**<Determines if the renderTarget and/or depth-buffer should be cleared*/
-        VertexLayout vertexLayout; /**<Describes the format of the vertices in the vertex-buffer*/
         RasterizerConfig rasterizerConfig; /**<Describes the configuration the Rasterizer, i.e blending, depth-buffer, culling and polygon draw mode*/
         InputLayout inputLayout; /**<Describes how the Bindings are organized*/
+        VertexLayout vertexLayout; /**<Describes the format of the vertices in the vertex-buffer*/
         RenderPassInfo(std::vector<Shader> const &_shaderStages, 
-                    std::variant<Texture, Window> _renderTarget, VertexLayout _vertexLayout = VertexLayout(),
-                    ClearOperation _clearOperations = ClearOperation::none,
-                    RasterizerConfig _rasterizerConfig = RasterizerConfig(), InputLayout _inputLayout = InputLayout()):
+                    std::variant<Texture, Window> _renderTarget, ClearOperation _clearOperations = ClearOperation::none,
+                    RasterizerConfig _rasterizerConfig = RasterizerConfig(),
+                    InputLayout _inputLayout = InputLayout(),VertexLayout _vertexLayout = VertexLayout()):
             shaderStages(_shaderStages),renderTarget(_renderTarget),clearOperations(_clearOperations),
-            vertexLayout(_vertexLayout),rasterizerConfig(_rasterizerConfig),inputLayout(_inputLayout){}
+            rasterizerConfig(_rasterizerConfig),inputLayout(_inputLayout),vertexLayout(_vertexLayout){}
     };
     struct CommandBufferInfo{
         CommandBufferInfo(){}

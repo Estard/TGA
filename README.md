@@ -112,9 +112,9 @@ struct RenderPassInfo{
   std::vector<Shader> shaderStages;           // The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.). If using a compute shader it has to be the only stader stage
   std::variant<Texture, Window> renderTarget; // Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time 
   ClearOperation clearOperations;             // Determines if the renderTarget and/or depth-buffer should be cleared
-  VertexLayout vertexLayout;                  // Describes the format of the vertices in the vertex-buffer
   RasterizerConfig rasterizerConfig;          // Describes the configuration the Rasterizer, i.e blending, depth-buffer, culling and polygon draw mode
   InputLayout inputLayout;                    // Describes how the Bindings are organized
+  VertexLayout vertexLayout;                  // Describes the format of the vertices in the vertex-buffer
 ```
 ##### VertexLayout
 The VertexLayout describes how a vertex in a vertex-buffer is laid out in memory.
