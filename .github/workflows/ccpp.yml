@@ -21,7 +21,7 @@ jobs:
       run: sudo apt-get install libglm-dev
     - name: configure
       run: cmake .
-    - name: make
+    - name: make -j${nproc}
       run: make
     - uses: actions/upload-artifact@v1
       with:
@@ -31,3 +31,7 @@ jobs:
       with:
         name: terrainViewer
         path: sandbox/terrainViewer
+    - uses: actions/upload-artifact@v1
+      with:
+        name: particles
+        path: sandbox/particles

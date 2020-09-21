@@ -87,7 +87,7 @@ class Particles : public Framework
 
     void initParticles()
     {
-        constexpr std::array<glm::vec4,4> colorPalette{
+        const std::array<glm::vec4,4> colorPalette{
             glm::vec4(1,0,0,.75),
             glm::vec4(0,1,0,.75),
             glm::vec4(0,0,1,.75),
