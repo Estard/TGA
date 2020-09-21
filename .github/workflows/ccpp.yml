@@ -21,8 +21,8 @@ jobs:
       run: sudo apt-get install libglm-dev
     - name: configure
       run: cmake .
-    - name: make -j${nproc}
-      run: make
+    - name: make 
+      run: make -j${nproc}
     - uses: actions/upload-artifact@v1
       with:
         name: sandbox
