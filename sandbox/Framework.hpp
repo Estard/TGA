@@ -9,9 +9,7 @@ class Framework
     public:
     Framework():deltaTime(0.016),tgai(std::make_shared<tga::TGAVulkan>()){}
     Framework(std::shared_ptr<tga::Interface> _tgai):deltaTime(0.016),tgai(_tgai){}
-    virtual void OnCreate(){}
-    virtual void OnUpdate(uint32_t){}
-    virtual void OnDestroy(){}
+    
     void run(uint32_t width = 0, uint32_t height = 0, bool vSyncOn = true)
     {
         if(!width || !height){
@@ -35,6 +33,11 @@ class Framework
         }
         OnDestroy();
     }
+
+    private:
+    virtual void OnCreate(){}
+    virtual void OnUpdate(uint32_t){}
+    virtual void OnDestroy(){}
 
     protected:
     double deltaTime;
