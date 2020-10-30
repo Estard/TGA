@@ -21,6 +21,7 @@ namespace tga{
         RenderPass createRenderPass(const RenderPassInfo &renderPassInfo) override;
 
         void beginCommandBuffer() override;
+        void restart(CommandBuffer cmdBuffer) override;
         void setRenderPass(RenderPass renderPass, uint32_t frambufferIndex) override;
         void bindVertexBuffer(Buffer buffer) override;
         void bindIndexBuffer(Buffer buffer) override;

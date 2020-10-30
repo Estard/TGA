@@ -9,7 +9,7 @@ namespace tga
         instance(createInstance()),debugger(createDebugger()),pDevice(choseGPU()),
         queueIndices(findQueueFamilies()),device(createDevice()),
         graphicsQueue(device.getQueue(queueIndices.graphics,0)),transferQueue(device.getQueue(queueIndices.transfer,0)),
-        transferCmdPool(createCommandPool(queueIndices.transfer)),graphicsCmdPool(createCommandPool(queueIndices.graphics))
+        transferCmdPool(createCommandPool(queueIndices.transfer)),graphicsCmdPool(createCommandPool(queueIndices.graphics, vk::CommandPoolCreateFlagBits::eResetCommandBuffer))
     {
         wsi.setVulkanHandles(instance,pDevice,device,graphicsQueue,queueIndices.graphics);
         std::cout << "TGA Vulkan Created\n";
@@ -215,7 +215,7 @@ namespace tga
             }
         }
         InputSet inputSet = InputSet(TgaInputSet(VkDescriptorPool(descPool)));
-        InputSet_TV inputSet_tv{descPool,descSet};
+        InputSet_TV inputSet_tv{descPool,descSet, inputSetInfo.setIndex};
         inputSets.emplace(inputSet,inputSet_tv);
         return inputSet;
     }
@@ -265,6 +265,14 @@ namespace tga
         currentRecording.cmdBuffer = device.allocateCommandBuffers({graphicsCmdPool,vk::CommandBufferLevel::ePrimary,1})[0];
         currentRecording.cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
     }
+    void TGAVulkan::restart(CommandBuffer cmdBuffer)
+    {
+        if(currentRecording.cmdBuffer)
+            throw std::runtime_error("Another Commandbuffer is still recording!");
+        auto &handle = commandBuffers[cmdBuffer];
+        currentRecording.cmdBuffer = handle.cmdBuffer;
+        handle.cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
+    }
     void TGAVulkan::bindVertexBuffer(Buffer buffer) 
     {
         auto &handle = buffers[buffer];
@@ -281,7 +289,7 @@ namespace tga
         auto &handle = inputSets[inputSet];
 
         auto &renderPass = renderPasses[currentRecording.renderPass];
-        currentRecording.cmdBuffer.bindDescriptorSets(renderPass.bindPoint,renderPass.pipelineLayout,0,1,&handle.descriptorSet,0,nullptr);
+        currentRecording.cmdBuffer.bindDescriptorSets(renderPass.bindPoint,renderPass.pipelineLayout,handle.index,1,&handle.descriptorSet,0,nullptr);
     }
     void TGAVulkan::draw(uint32_t vertexCount, uint32_t firstVertex) 
     {
@@ -736,7 +744,7 @@ namespace tga
         else //Staging Buffer
         {
             auto buffer = allocateBuffer(size,vk::BufferUsageFlagBits::eTransferSrc,
-            vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
+                vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
             auto mapping = device.mapMemory(buffer.memory,0,size,{});
             std::memcpy(mapping,data,size);
             device.unmapMemory(buffer.memory);

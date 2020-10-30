@@ -38,6 +38,7 @@ namespace tga
     struct InputSet_TV{
         vk::DescriptorPool descriptorPool;
         vk::DescriptorSet descriptorSet;
+        uint32_t index;
     };
 
 
