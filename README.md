@@ -151,6 +151,7 @@ A CommandBuffer is a list of instructions to be executed by the GPU.
 
 A CommandBuffer is started with a call to ```Interface::beginCommandBuffer()```
 The handle to a CommandBuffer can then be created with a call to ```Interface::endCommandBuffer()```
+A call to ```Interface::restart(CommandBuffer cmdBuffer)``` can be used instead of _beginCommandBuffer_ to reset a previously obtained commandbuffer and fill it with a new set of commands. Note that _endCommandBuffer_ is still needed to close the CommandBuffer after it has been restarted.
 Inbetween _beginCommandBuffer_ and _endCommandBuffer_ you can call the following commands to be recorded in the CommandBuffer:
 - ```setRenderPass(RenderPass renderPass, uint32_t framebufferIndex)``` Configure the Pipeline to use the specified RenderPass and target the specified framebuffer of RenderPass.renderTarget
 - ```bindVertexBuffer(Buffer buffer)```Use a Buffer as a vertex-buffer
