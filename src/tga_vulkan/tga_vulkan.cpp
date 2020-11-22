@@ -261,14 +261,18 @@ namespace tga
     void TGAVulkan::beginCommandBuffer() 
     {
         if(currentRecording.cmdBuffer)
-            throw std::runtime_error("Commandbuffer did not finish recording yet!");
+            throw std::runtime_error("[TGA Vulkan] Another Commandbuffer is still recording!");
         currentRecording.cmdBuffer = device.allocateCommandBuffers({graphicsCmdPool,vk::CommandBufferLevel::ePrimary,1})[0];
         currentRecording.cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
     }
-    void TGAVulkan::restart(CommandBuffer cmdBuffer)
+    void TGAVulkan::beginCommandBuffer(CommandBuffer cmdBuffer)
     {
         if(currentRecording.cmdBuffer)
-            throw std::runtime_error("Another Commandbuffer is still recording!");
+            throw std::runtime_error("[TGA Vulkan] Another Commandbuffer is still recording!");
+        if(!cmdBuffer){
+            return beginCommandBuffer();
+            
+        }
         auto &handle = commandBuffers[cmdBuffer];
         currentRecording.cmdBuffer = handle.cmdBuffer;
         handle.cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
@@ -551,7 +555,7 @@ namespace tga
             if ((typeFilter & (1 << i))&& ((mProps.memoryTypes[i].propertyFlags & properties) == properties))
                 return i;
         }
-        throw std::runtime_error("Memory Type could not be found");
+        throw std::runtime_error("[TGA Vulkan] Memory Type could not be found");
     }
 
     Buffer_TV TGAVulkan::allocateBuffer(vk::DeviceSize size,vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
@@ -594,7 +598,7 @@ namespace tga
             if ((props.optimalTilingFeatures & features) == features) 
                 return format;
         }
-        throw std::runtime_error("Required Depth Format not present on this system");
+        throw std::runtime_error("[TGA Vulkan] Required Depth Format not present on this system");
     }
 
     DepthBuffer_TV TGAVulkan::createDepthBuffer(uint32_t width, uint32_t height)
@@ -715,7 +719,7 @@ namespace tga
             }
         }
         if(!isValid)
-            throw std::runtime_error("Invalid Shader Stage Configuration");
+            throw std::runtime_error("[TGA Vulkan] Invalid Shader Stage Configuration");
         return {makeGraphicsPipeline(renderPassInfo,pipelineLayout,renderPass),vk::PipelineBindPoint::eGraphics};
     }
 
@@ -802,7 +806,7 @@ namespace tga
     vk::BufferUsageFlags TGAVulkan::determineBufferFlags(tga::BufferUsage usage)
     {
         if(usage == BufferUsage::undefined)
-            throw std::runtime_error("Buffer usage is undefined!");
+            throw std::runtime_error("[TGA Vulkan] Buffer usage is undefined!");
         vk::BufferUsageFlags usageFlags = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc;
         if(usage & tga::BufferUsage::uniform){
             usageFlags |= vk::BufferUsageFlagBits::eUniformBuffer;
@@ -988,7 +992,7 @@ namespace tga
             case vk::ImageLayout::eDepthStencilAttachmentOptimal: return vk::AccessFlagBits::eDepthStencilAttachmentRead|vk::AccessFlagBits::eDepthStencilAttachmentWrite;
             case vk::ImageLayout::eDepthAttachmentOptimal: return vk::AccessFlagBits::eDepthStencilAttachmentRead|vk::AccessFlagBits::eDepthStencilAttachmentWrite;
             case vk::ImageLayout::eStencilAttachmentOptimal: return vk::AccessFlagBits::eDepthStencilAttachmentRead|vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-            default: throw std::runtime_error("Layout to AccessFlags transition not supported");;
+            default: throw std::runtime_error("[TGA Vulkan] Layout to AccessFlags transition not supported");;
         }
     }
     vk::PipelineStageFlags TGAVulkan::layoutToPipelineStageFlags(vk::ImageLayout layout)
@@ -1005,7 +1009,7 @@ namespace tga
             case vk::ImageLayout::eDepthStencilAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
             case vk::ImageLayout::eDepthAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
             case vk::ImageLayout::eStencilAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
-            default: throw std::runtime_error("Layout to PipelineStageFlags transition not supported");
+            default: throw std::runtime_error("[TGA Vulkan] Layout to PipelineStageFlags transition not supported");
         }
     }
 

@@ -72,7 +72,7 @@ class ObjViewer: public Framework
     void OnUpdate(uint32_t frame)
     {
         UpdateCam();
-        tgai->restart(cmdBuffer);
+        tgai->beginCommandBuffer(cmdBuffer);
         
         tgai->bindVertexBuffer(vertexBuffer);
         tgai->bindIndexBuffer(indexBuffer);
@@ -84,8 +84,7 @@ class ObjViewer: public Framework
         if(normalMapInputSet)
             tgai->bindInputSet(normalMapInputSet);
         tgai->drawIndexed(modelVertexCount,0,0);
-        if(tgai->endCommandBuffer() != cmdBuffer)
-            throw std::runtime_error("Commandbuffer Handle has changed");
+        cmdBuffer = tgai->endCommandBuffer();
         tgai->execute(cmdBuffer);
     }
     void OnDestroy()

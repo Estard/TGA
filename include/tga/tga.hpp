@@ -490,7 +490,7 @@ namespace tga
 
         //Commands
         virtual void beginCommandBuffer() = 0;
-        virtual void restart(CommandBuffer cmdBuffer) = 0;
+        virtual void beginCommandBuffer(CommandBuffer cmdBuffer) = 0;
         virtual void setRenderPass(RenderPass renderPass, uint32_t framebufferIndex) = 0;
         virtual void bindVertexBuffer(Buffer buffer) = 0;
         virtual void bindIndexBuffer(Buffer buffer) = 0;
