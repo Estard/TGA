@@ -460,12 +460,14 @@ namespace tga
     
     void TGAVulkan::free(Shader shader) 
     {   
+        device.waitIdle();
         auto &handle = shaders[shader];
         device.destroy(handle.module);
         shaders.erase(shader);
     }
     void TGAVulkan::free(Buffer buffer) 
     {
+        device.waitIdle();
         auto &handle = buffers[buffer];
         device.destroy(handle.buffer);
         device.free(handle.memory);
@@ -473,6 +475,7 @@ namespace tga
     }
     void TGAVulkan::free(Texture texture) 
     {
+        device.waitIdle();
         auto &handle = textures[texture];
         auto &depthHandle = textureDepthBuffers[texture];
         if(depthHandle.image){
@@ -489,6 +492,7 @@ namespace tga
     }
     void TGAVulkan::free(Window window) 
     {
+        device.waitIdle();
         auto &depthHandle = windowDepthBuffers[window];
         if(depthHandle.image){
             device.destroy(depthHandle.imageView);
@@ -500,12 +504,14 @@ namespace tga
     }
     void TGAVulkan::free(InputSet inputSet) 
     {
+        device.waitIdle();
         auto &handle = inputSets[inputSet];
         device.destroy(handle.descriptorPool);
         inputSets.erase(inputSet);
     }
     void TGAVulkan::free(RenderPass renderPass) 
     {
+        device.waitIdle();
         auto &handle = renderPasses[renderPass];
         for(auto &fb : handle.framebuffers)
             device.destroy(fb);
@@ -518,6 +524,7 @@ namespace tga
     }
     void TGAVulkan::free(CommandBuffer commandBuffer) 
     {
+        device.waitIdle();
         auto &handle = commandBuffers[commandBuffer];
         device.freeCommandBuffers(graphicsCmdPool,{handle.cmdBuffer});
         commandBuffers.erase(commandBuffer); 

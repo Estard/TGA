@@ -389,6 +389,7 @@ namespace tga
     struct SetLayout{
         std::vector<BindingLayout> bindingLayouts;
         SetLayout(const std::vector<BindingLayout> &_bindingLayouts = {}):bindingLayouts(_bindingLayouts){}
+        SetLayout(std::initializer_list<BindingLayout> _bindingLayouts):bindingLayouts(_bindingLayouts){};
     };
 
     struct InputLayout{
