@@ -34,7 +34,7 @@ int main(){
     try
     {
         HeightmapViewer hv;
-        hm = createDefaultHeigthmap();
+        auto hm = ::hm();
         float terrainHeight = hm.width;
         hv.setHeightmap(hm.data.data(),hm.width,hm.height,10,10,terrainHeight*1.75);
         /*{
