@@ -518,6 +518,10 @@ namespace tga
         */
         virtual uint32_t nextFrame(Window window) = 0;
 
+        /** \brief Polling of events.
+        */
+        virtual void pollEvents(Window window) = 0;
+
         /** \brief Shows the last acquired framebuffer on screen.
         */
         virtual void present(Window window) = 0;

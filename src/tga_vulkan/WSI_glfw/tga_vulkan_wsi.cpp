@@ -131,6 +131,12 @@ namespace tga
         handle.currentFrameIndex = nextFrame.value;
         return handle.currentFrameIndex;
     }
+
+    void VulkanWSI::pollEvents(Window window)
+    {
+        glfwPollEvents();
+    }
+    
     void VulkanWSI::presentImage(Window window)
     {
         auto &handle = windows[window];

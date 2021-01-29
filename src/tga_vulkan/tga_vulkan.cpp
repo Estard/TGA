@@ -416,6 +416,12 @@ namespace tga
     {
         return wsi.aquireNextImage(window);
     }
+
+    void TGAVulkan::pollEvents(Window window)
+    {
+        wsi.pollEvents(window);
+    }
+
     void TGAVulkan::present(Window window) 
     {
         auto &handle = wsi.getWindow(window);

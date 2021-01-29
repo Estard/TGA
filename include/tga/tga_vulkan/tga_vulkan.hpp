@@ -44,6 +44,10 @@ namespace tga{
         */
         uint32_t nextFrame(Window window) override;
 
+        /** \copydoc Interface::pollEvents(Window window)
+        */
+        void pollEvents(Window window) override;
+
         /** \copydoc Interface::present(Window window)
         */
         void present(Window window) override;
