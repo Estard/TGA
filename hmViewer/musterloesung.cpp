@@ -35,26 +35,26 @@ int main(){
         HeightmapViewer hv;
         float terrainHeight = hm.width;
         hv.setHeightmap(hm.data.data(),hm.width,hm.height,10,10,terrainHeight*1.75);
-        {
-            auto [tex, w, h] = loadTex("/home/estard/Bilder/MonsterHunterPortable3rdHDRemake-master/TEXTURES/NPJB40001/AREAS/DESERTED_ISLAND/deserted_island_tex020.png");
+        /*{
+            auto [tex, w, h] = loadTex("someGrassyTexture.png");
             hv.setSurfaceLowTexture(tex.data(),w,h);
         }
 
         {
-            auto [tex, w, h] = loadTex("/home/estard/Bilder/MonsterHunterPortable3rdHDRemake-master/TEXTURES/NPJB40001/AREAS/DESERTED_ISLAND/deserted_island_tex003.png");
+            auto [tex, w, h] = loadTex("someDirtyTexture.png");
             hv.setSideLowTexture(tex.data(),w,h);
         }
 
         {
-            auto [tex, w, h] = loadTex("/home/estard/Bilder/MonsterHunterPortable3rdHDRemake-master/TEXTURES/NPJB40001/AREAS/DESERTED_ISLAND/deserted_island_tex005.png");
+            auto [tex, w, h] = loadTex("someSnowyTexture.png");
             hv.setSurfaceHighTexture(tex.data(),w,h);
         }
 
         {
-            auto [tex, w, h] = loadTex("/home/estard/Bilder/MonsterHunterPortable3rdHDRemake-master/TEXTURES/NPJB40001/AREAS/DESERTED_ISLAND/deserted_island_tex033.png");
+            auto [tex, w, h] = loadTex("someRockTexture.png");
             hv.setSideHighTexture(tex.data(),w,h);
         }
-        hv.setTextureTiling(4./hm.width,4./hm.height);
+        hv.setTextureTiling(4./hm.width,4./hm.height);*/
         hv.view();
     }
     catch(const std::exception& e)
