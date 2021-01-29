@@ -135,6 +135,7 @@ namespace tga
     void VulkanWSI::pollEvents(Window window)
     {
         glfwPollEvents();
+        (void)window;//Silence compiler warning
     }
     
     void VulkanWSI::presentImage(Window window)
