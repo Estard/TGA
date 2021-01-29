@@ -30,6 +30,7 @@ namespace tga{
         void setWindowTitle(Window window, const char* title) override;
         void free(Window window) override;
         uint32_t aquireNextImage(Window window) override;
+        void pollEvents(Window window) override;
         void presentImage(Window window) override;
 
         bool windowShouldClose(Window window) override;

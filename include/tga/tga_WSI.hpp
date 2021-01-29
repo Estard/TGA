@@ -10,6 +10,7 @@ namespace tga{
         virtual void free(Window window) = 0;
         virtual void setWindowTitle(Window window, const char* title) = 0;
         virtual uint32_t aquireNextImage(Window window) = 0;
+        virtual void pollEvents(Window window) = 0; 
         virtual void presentImage(Window window) = 0;
         virtual bool windowShouldClose(Window window) = 0;
         virtual bool keyDown(Window window, Key key) = 0;
