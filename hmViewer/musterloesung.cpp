@@ -29,10 +29,12 @@ std::tuple<std::vector<uint8_t>,uint32_t, uint32_t> loadTex(const std::string &f
     return {std::vector<uint8_t>(p,p+w*h*4),w,h};
 }
 
+
 int main(){
     try
     {
         HeightmapViewer hv;
+        hm = createDefaultHeigthmap();
         float terrainHeight = hm.width;
         hv.setHeightmap(hm.data.data(),hm.width,hm.height,10,10,terrainHeight*1.75);
         /*{
