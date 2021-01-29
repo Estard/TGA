@@ -19,6 +19,8 @@ jobs:
       run: sudo apt-get install libglfw3-dev
     - name: install_deps_glm
       run: sudo apt-get install libglm-dev
+    - name: submodules
+      run: git submodule update --init --recursive
     - name: configure
       run: cmake .
     - name: make 

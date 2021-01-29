@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdint>
 #include <vector>
 struct Image{uint32_t width,height;std::vector<float> data;};

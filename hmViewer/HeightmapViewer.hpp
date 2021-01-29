@@ -1,3 +1,4 @@
+#pragma once
 #include "tga/tga.hpp"
 #include "CameraController.hpp"
 #include "tga/tga_vulkan/tga_vulkan.hpp"
