@@ -285,7 +285,7 @@ class ObjViewer: public Framework
         renderPass = tgai->createRenderPass({
                 {vs,fs},_frameworkWindow,tga::ClearOperation::all,
                 {tga::CompareOperation::less,false,tga::BlendFactor::srcAlpha,tga::BlendFactor::oneMinusSrcAlpha,
-                    tga::FrontFace::counterclockwise, tga::CullMode::none},
+                    tga::FrontFace::counterclockwise, tga::CullMode::back},
                 inputLayout,
                 { //Vertex Layout
                     sizeof(Vertex), {
@@ -316,10 +316,10 @@ class ObjViewer: public Framework
         //const glm::vec3 lookDirection = glm::vec3(1.f,0.f,0.f);
         const glm::vec3 up = glm::vec3(0.f,1.f,0.f);
 
-        cam.projection = glm::perspective(glm::radians(90.f),
+        cam.projection = glm::perspective_vk(glm::radians(90.f),
             _frameworkWindowWidth/static_cast<float>(_frameworkWindowHeight),
             0.1f,1000.f);
-        cam.projection[1][1] *= -1;
+        //cam.projection[1][1] *= -1;
         cam.view = glm::lookAt(position,glm::vec3(0,0,0),up);
         cam.lightPos = glm::vec3(2*circleRadius);
         tgai->updateBuffer(camData,(uint8_t*)&cam,sizeof(cam),0);
