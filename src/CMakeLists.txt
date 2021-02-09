@@ -1,1 +1,2 @@
 add_subdirectory(tga_vulkan)
+add_subdirectory(utils)
