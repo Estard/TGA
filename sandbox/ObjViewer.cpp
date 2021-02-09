@@ -236,6 +236,7 @@ class ObjViewer: public Framework
                     format,
                     static_cast<uint8_t*>(pixels),width*height*4u,
                     tga::SamplerMode::linear});
+                stbi_image_free(pixels);
             }
         }};
         loadTex(diffuseMap,diffuseMapPath, tga::Format::r8g8b8a8_srgb);
