@@ -1,5 +1,6 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tga/tga_utils.hpp"
 #include <filesystem>
 
@@ -87,31 +88,41 @@ namespace tga
         }
     }
 
-    Texture loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode, std::shared_ptr<Interface> const& tgai)
+    TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode, std::shared_ptr<Interface> const& tgai, bool hdrIsSRGB)
     {
         int width, height,channels;
         int components = formatComponentCount(format);
         uint8_t* data;
         uint32_t dataSize = 0;
-        if(stbi_is_hdr(filepath.c_str())){
+
+        if(isFloatingPointFormat(format)){
+            // Usually, we don't want any conversion when loading hdr files
+            float currentGamma = 1/stbi__l2h_gamma;
+            if(stbi_is_hdr(filepath.c_str()) && !hdrIsSRGB)   
+                stbi_hdr_to_ldr_gamma(1);
+
             data = reinterpret_cast<uint8_t*>(stbi_loadf(filepath.c_str(),&width,&height,&channels,components));
             dataSize = width*height*components*sizeof(float);
+
+            stbi_hdr_to_ldr_gamma(currentGamma);
         }
         else{
             data = reinterpret_cast<uint8_t*>(stbi_load(filepath.c_str(),&width,&height,&channels,components));
             dataSize = width*height*components*sizeof(uint8_t);
-            if(isFloatingPointFormat(format))
-                std::cerr << "[TGA] Warning: selected floating point format while attempting to load non-floating point image\n";
         }
+
+        if(!data)
+            throw std::runtime_error("[TGA] Utils: Can't load image: " + filepath);
+
         auto texture = tgai->createTexture({
             static_cast<uint32_t>(width),
             static_cast<uint32_t>(height),
             format,
             data,dataSize,
             samplerMode});
-        
+
         stbi_image_free(data);
-        return texture;
+        return {texture, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
     }
 
 
@@ -191,5 +202,21 @@ namespace tga
             vertex.tangent = glm::normalize(vertex.tangent);
         
         return {vertexBuffer,indexBuffer};
+    }
+
+
+    void writeHDR(std::string const& filename, uint32_t width, uint32_t height, tga::Format format, std::vector<float> const& data)
+    {
+        if(!isFloatingPointFormat(format)){
+            std::cerr << "[TGA] Warning: Specified format is not a floating point format and thus "<< filename << "will not be saved to disk\n"; 
+            return;
+        }
+        int components = formatComponentCount(format);
+        if(!(data.size() >= width*height*components)){
+            std::cerr << "[TGA] Warning: provided data not as much as expected, file "<<filename<<" will not be saved to disk\n";
+            return;
+        }
+        if(!stbi_write_hdr(filename.c_str(),static_cast<int>(width),static_cast<int>(height),components,data.data()))
+            std::cerr << "[TGA] Warning: File "<< filename<< " could not be saved to disk\n";
     }
 }

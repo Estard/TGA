@@ -21,6 +21,13 @@ namespace tga
         static tga::VertexLayout layout();
     };
 
+    struct TextureBundle
+    {
+        Texture texture;
+        uint32_t width, height;
+        operator Texture(){return texture;}
+    };
+
     struct Obj
     {
         std::vector<tga::Vertex> vertexBuffer;
@@ -30,9 +37,29 @@ namespace tga
 
     tga::Shader loadShader(std::string const& filepath, tga::ShaderType shaderType, std::shared_ptr<tga::Interface> const& tgai);
 
-    tga::Texture loadTexture(std::string const& filepath, tga::Format format, tga::SamplerMode samplerMode, std::shared_ptr<tga::Interface> const& tgai);
+    TextureBundle loadTexture(std::string const& filepath, tga::Format format, tga::SamplerMode samplerMode, std::shared_ptr<tga::Interface> const& tgai, bool hdrIsSRGB = false);
 
     Obj loadObj(std::string const& filepath);
+
+    void writeHDR(std::string const& filename, uint32_t width, uint32_t height, tga::Format format, std::vector<float> const& data);
+
+
+    /**
+     * @brief A function to get access to the memory of something as a uint8_t* as required for most tga::Info structs
+     * 
+     * @return The memory address as uint8_t*
+     */
+    template<typename T>
+    uint8_t* memoryAddress(T &value)
+    {
+        return (uint8_t*)&value;
+    }
+
+    template<typename T>
+    uint8_t* memoryAddress(std::vector<T> &vector)
+    {
+        return (uint8_t*)vector.data();
+    }
 }
 
 namespace std
