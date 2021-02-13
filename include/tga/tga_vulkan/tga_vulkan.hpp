@@ -26,8 +26,8 @@ namespace tga{
         void bindVertexBuffer(Buffer buffer) override;
         void bindIndexBuffer(Buffer buffer) override;
         void bindInputSet(InputSet inputSet) override;
-        void draw(uint32_t vertexCount, uint32_t firstVertex) override;
-        void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset) override;
+        void draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount = 1, uint32_t firstInstance = 0) override;
+        void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount = 1, uint32_t firstInstance = 0) override;
         void dispatch(uint32_t groupCountX,uint32_t groupCountY,uint32_t groupCountZ) override;     
         CommandBuffer endCommandBuffer() override;
         void execute(CommandBuffer commandBuffer) override;

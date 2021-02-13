@@ -295,13 +295,13 @@ namespace tga
         auto &renderPass = renderPasses[currentRecording.renderPass];
         currentRecording.cmdBuffer.bindDescriptorSets(renderPass.bindPoint,renderPass.pipelineLayout,handle.index,1,&handle.descriptorSet,0,nullptr);
     }
-    void TGAVulkan::draw(uint32_t vertexCount, uint32_t firstVertex) 
+    void TGAVulkan::draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount, uint32_t firstInstance) 
     {
-        currentRecording.cmdBuffer.draw(vertexCount,1,firstVertex,0);
+        currentRecording.cmdBuffer.draw(vertexCount,instanceCount,firstVertex,firstInstance);
     }
-    void TGAVulkan::drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset) 
+    void TGAVulkan::drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount, uint32_t firstInstance) 
     {
-        currentRecording.cmdBuffer.drawIndexed(indexCount,1,firstIndex,vertexOffset,0);
+        currentRecording.cmdBuffer.drawIndexed(indexCount,instanceCount,firstIndex,vertexOffset,firstInstance);
     }
     void TGAVulkan::dispatch(uint32_t groupCountX,uint32_t groupCountY,uint32_t groupCountZ)
     {
