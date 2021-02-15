@@ -1,6 +1,6 @@
 #pragma once
 
-//Math is mostly just GLM with a bunch of defines
+// Math is mostly just GLM with a bunch of defines and some additions
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -11,9 +11,9 @@
 #include <glm/gtx/hash.hpp>
 
 
-//Preflipped y-axis, depth range 0.0 to 1.0
 namespace glm
 {
+	// Preflipped y-axis, depth range 0.0 to 1.0
     template<typename T>
 	GLM_FUNC_QUALIFIER mat<4, 4, T, defaultp> perspective_vk(T fovy, T aspect, T zNear, T zFar)
 	{
@@ -28,5 +28,12 @@ namespace glm
 		Result[2][3] = - static_cast<T>(1);
 		Result[3][2] = -(zFar * zNear) / (zFar - zNear);
 		return Result;
+	}
+
+	// Standard value remapping function
+	template<typename T>
+	GLM_FUNC_QUALIFIER T remap(T value, T fromMin, T fromMax, T toMin, T toMax)
+	{
+		return (value - fromMin) * (toMax - toMin) / (fromMax - fromMin) + toMin;
 	}
 };
