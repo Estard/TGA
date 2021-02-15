@@ -976,7 +976,9 @@ namespace tga
         vk::Bool32 enabled = config.blendEnabled?VK_TRUE:VK_FALSE;
         vk::BlendFactor srcBlendFac = determineBlendFactor(config.srcBlend);
         vk::BlendFactor dstBlendFac = determineBlendFactor(config.dstBlend);
-        return {enabled,srcBlendFac,dstBlendFac,vk::BlendOp::eAdd,srcBlendFac,dstBlendFac,vk::BlendOp::eAdd,
+        vk::BlendFactor srcAlphaBlendFac = determineBlendFactor(config.srcAlphaBlend);
+        vk::BlendFactor dstAlphaBlendFac = determineBlendFactor(config.dstAlphaBlend);
+        return {enabled,srcBlendFac,dstBlendFac,vk::BlendOp::eAdd,srcAlphaBlendFac,dstAlphaBlendFac,vk::BlendOp::eAdd,
             vk::ColorComponentFlagBits::eR|vk::ColorComponentFlagBits::eG|vk::ColorComponentFlagBits::eB|vk::ColorComponentFlagBits::eA};
    }
 

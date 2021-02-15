@@ -123,8 +123,7 @@ void HeightmapViewer::createRescources()
         {{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},{tga::BindingType::sampler2D}}
     }};
     terrainPass = tgai->createRenderPass({{terrainVS,terrainFS},window,tga::ClearOperation::none,
-    {tga::CompareOperation::less,false,tga::BlendFactor::srcAlpha,tga::BlendFactor::oneMinusSrcAlpha,
-        tga::FrontFace::clockwise,tga::CullMode::back,tga::PolygonMode::solid},
+    {tga::CompareOperation::less,tga::FrontFace::clockwise,tga::CullMode::back},
         terrainInputLayout});
 
     uint8_t grass[] = {0x56,0x7d,0x46,150};
@@ -149,8 +148,7 @@ void HeightmapViewer::createRescources()
     auto ppVS = tgai->createShader({tga::ShaderType::vertex,skySpvVert.data(),skySpvVert.size()});
     auto ppFS = tgai->createShader({tga::ShaderType::fragment,skySpvFrag.data(),skySpvFrag.size()});
     skyPass = tgai->createRenderPass({{ppVS,ppFS},window,tga::ClearOperation::all,
-    {tga::CompareOperation::ignore,false,tga::BlendFactor::srcAlpha,tga::BlendFactor::oneMinusSrcAlpha,
-        tga::FrontFace::counterclockwise,tga::CullMode::front,tga::PolygonMode::solid},
+    {tga::CompareOperation::ignore,tga::FrontFace::counterclockwise,tga::CullMode::front},
         terrainInputLayout});
     tgai->free(ppVS);tgai->free(ppFS);
     

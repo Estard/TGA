@@ -129,11 +129,13 @@ A VertexAttribute consists of:
 The RasterizerConfig determines  depth test, blending, culling and polygon-draw-mode
 the RasterizerConfig struct consists of:
 - ```CompareOperation depthCompareOp``` If and how the depth test is performed. CompareOperation::ignore to disable depth-testing otherwise the equivalent of ==, <, <=, >, >=
-- ```bool blendEnabled``` Whether blending is enabled
-- ```BlendFactor srcBlend```The factor with which the source image is weighted, by default BlendFactor::srcAlpha 
-- ```BlendFactor dstBlend```The factor with which the destination image is weighted, by default BlendFactor::oneMinusSrcAlpha
 - ```FrontFace frontFace```Which face of a given triangle is the front face, either FrontFace::clockwise or FrontFace::counterClockwise
 - ```CullMode cullMode```Which face to cull. Either CullMode::none, CullMode::front, CullMode::back or CullMode::all 
+- ```bool blendEnabled``` Whether blending is enabled
+- ```BlendFactor srcBlend```The factor with which the source image rgb is weighted, by default BlendFactor::srcAlpha 
+- ```BlendFactor dstBlend```The factor with which the destination image rgb is weighted, by default BlendFactor::oneMinusSrcAlpha
+- ```BlendFactor srcAlphaBlend```The factor with which the source image alpha is weighted, by default BlendFactor::one 
+- ```BlendFactor dstAlphaBlend```The factor with which the destination image alpha is weighted, by default BlendFactor::oneMinusSrcAlpha
 - ```PolygonMode polygonMode```Whether trinagles should be filled (PolygonMode::fill) or only drawn as wireframe (PolygonMode::wireframe)
 ##### InputLayout
 The InputLayout describes how Bindings are organized.

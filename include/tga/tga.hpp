@@ -367,17 +367,23 @@ namespace tga
 
     struct RasterizerConfig{
         CompareOperation depthCompareOp;
+        FrontFace frontFace;
+        CullMode cullMode;
         bool blendEnabled;
         BlendFactor srcBlend;
         BlendFactor dstBlend;
-        FrontFace frontFace;
-        CullMode cullMode;
+        BlendFactor srcAlphaBlend;
+        BlendFactor dstAlphaBlend;
         PolygonMode polygonMode;
-        RasterizerConfig(CompareOperation _depthCompareOp = CompareOperation::ignore,bool _blendEnabled = false,
+        RasterizerConfig(CompareOperation _depthCompareOp = CompareOperation::ignore,
+                        FrontFace _frontFace = FrontFace::clockwise,CullMode _cullMode = CullMode::none,
+                        bool _blendEnabled = false,
                         BlendFactor _srcBlend = BlendFactor::srcAlpha,BlendFactor _dstBlend = BlendFactor::oneMinusSrcAlpha,
-                        FrontFace _frontFace = FrontFace::clockwise,CullMode _cullMode = CullMode::none, PolygonMode _polygonMode = PolygonMode::solid):
-            depthCompareOp(_depthCompareOp),blendEnabled(_blendEnabled),srcBlend(_srcBlend),dstBlend(_dstBlend),
-            frontFace(_frontFace),cullMode(_cullMode),polygonMode(_polygonMode){}
+                        BlendFactor _srcAlphaBlend = BlendFactor::one,BlendFactor _dstAlphaBlend = BlendFactor::oneMinusSrcAlpha,
+                        PolygonMode _polygonMode = PolygonMode::solid):
+            depthCompareOp(_depthCompareOp),frontFace(_frontFace),cullMode(_cullMode),
+            blendEnabled(_blendEnabled),srcBlend(_srcBlend),dstBlend(_dstBlend),srcAlphaBlend(_srcAlphaBlend),dstAlphaBlend(_dstAlphaBlend),
+            polygonMode(_polygonMode){}
     };
 
     struct BindingLayout{
