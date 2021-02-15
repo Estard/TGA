@@ -26,7 +26,7 @@ struct ShaderInfo{
   uint8_t const *src; // Pointer to the shader code. Dependant on the underlying API, for Vulkan this would be SPIR-V 
   size_t srcSize;     // Size of the shader code in bytes
 ```
-The handle to a Shader is valid until a call to ```Interface::free(Shader shader);``` or until the descruction of the interface
+The handle to a Shader is valid until a call to ```Interface::free(Shader shader);``` or until the destruction of the interface
 
 #### Buffer
 A Buffer represents a chunk of memory on the GPU.
@@ -41,7 +41,7 @@ struct BufferInfo{
 ```
 To update the contents of a Buffer call ```Interface::updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset)``` with the Buffer you want to update, the data you want to write, the size of the data in bytes and an offset from the beginning of the Buffer
 
-The handle to a Buffer is valid until a call to ```Interface::free(Buffer buffer);``` or until the descruction of the interface
+The handle to a Buffer is valid until a call to ```Interface::free(Buffer buffer);``` or until the destruction of the interface
 
 #### Texture
 A Texture represents an image that is stored on and used by the GPU.
@@ -58,7 +58,7 @@ struct TextureInfo{
   SamplerMode samplerMode;  // How the Texture is sampled. Valid SamplerModes are SamplerMode::nearest (default) and   SamplerMode::linear
   RepeatMode repeatMode;    // How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeate modes refer to tga::RepeatMode
 ```
-The handle to a Texture is valid until a call to ```Interface::free(Texture texture);``` or until the descruction of the interface
+The handle to a Texture is valid until a call to ```Interface::free(Texture texture);``` or until the destruction of the interface
 
 #### Window
 A Window is used to present the result of a fragment shader to the screen.
@@ -81,7 +81,7 @@ The handle to a Window can be used to query and update its state:
 - To find out if a certain keyboard or mouse key was pressed during _nextFrame_ call ```Interface::keyDown(Window window, Key key)```
 - To find the position of the mouse cursor relative to a Window in pixel coordinates call ```Interface::mousePosition(Window window)```
 
-The handle to a Window is valid until a call to ```Interface::free(Window window);``` or until the descruction of the interface
+The handle to a Window is valid until a call to ```Interface::free(Window window);``` or until the destruction of the interface
 
 #### InputSet
 An InputSet is a collection of Bindings and a Binding is a resource used in a Shader.
@@ -100,7 +100,7 @@ The Binding struct consists of:
 - ```std::variant<Buffer, Texture> resource``` The handle the resource that should be bound
 - ```uint32_t slot```The index of the Binding in the shader
 - ```uint32_t arrayElement```The index of the Binding into the array if specified, zero by default
-The handle to an InputSet is valid until a call to ```Interface::free(InputSet inputSet);``` or until the descruction of the interface
+The handle to an InputSet is valid until a call to ```Interface::free(InputSet inputSet);``` or until the destruction of the interface
 
 #### RenderPass
 A RenderPass describes a configuration of the graphics-pipeline.
@@ -144,7 +144,7 @@ The BindingLayout struct consists of:
 - ```uint32_t count``` The number of Bindings of the specified type. When count > 1 it is equivalent to an array of this BindingType in the shader programm 
 
 
-The handle to a RenderPass is valid until a call to ```Interface::free(RenderPass renderPass);``` or until the descruction of the interface
+The handle to a RenderPass is valid until a call to ```Interface::free(RenderPass renderPass);``` or until the destruction of the interface
 
 #### CommandBuffer
 A CommandBuffer is a list of instructions to be executed by the GPU.
@@ -163,7 +163,7 @@ Inbetween _beginCommandBuffer_ and _endCommandBuffer_ you can call the following
 
 To execute a CommandBuffer call ```Interface::execute(CommandBuffer commandBuffer)```
 
-The handle to a CommandBuffer is valid until a call to ```Interface::free(CommandBuffer commandBuffer);``` or until the descruction of the interface
+The handle to a CommandBuffer is valid until a call to ```Interface::free(CommandBuffer commandBuffer);``` or until the destruction of the interface
 
 
 
