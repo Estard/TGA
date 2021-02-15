@@ -98,7 +98,7 @@ void HeightmapViewer::createRescources()
     wData.front = glm::vec3(0,0,1);
     wData.right = glm::vec3(1,0,0);
     wData.up = glm::vec3(0,1,0);
-    glm::vec3 rotation = {glm::radians(-90.f),glm::radians(0.f),glm::radians(-45/2.f)};
+    glm::vec3 rotation = {glm::radians(-45.f),glm::radians(0.f),glm::radians(-45/2.f)};
     wData.light = glm::vec4(glm::mat3(glm::quat(rotation))*glm::vec3(0,0,1),1.0);
 
     std::printf("LightDir: %1.2f %1.2f %1.2f\n",wData.light.x,wData.light.y,wData.light.z);

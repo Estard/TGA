@@ -37,11 +37,13 @@ namespace tga
 
     tga::Shader loadShader(std::string const& filepath, tga::ShaderType shaderType, std::shared_ptr<tga::Interface> const& tgai);
 
-    TextureBundle loadTexture(std::string const& filepath, tga::Format format, tga::SamplerMode samplerMode, std::shared_ptr<tga::Interface> const& tgai, bool hdrIsSRGB = false);
+    TextureBundle loadTexture(std::string const& filepath, tga::Format format, tga::SamplerMode samplerMode, std::shared_ptr<tga::Interface> const& tgai, bool doGammaCorrection = false);
 
     Obj loadObj(std::string const& filepath);
 
     void writeHDR(std::string const& filename, uint32_t width, uint32_t height, tga::Format format, std::vector<float> const& data);
+
+    void writePNG(std::string const& filename, uint32_t width, uint32_t height, tga::Format format, std::vector<uint8_t> const& data);
 
 
     /**
@@ -50,13 +52,13 @@ namespace tga
      * @return The memory address as uint8_t*
      */
     template<typename T>
-    uint8_t* memoryAddress(T &value)
+    uint8_t* memoryAccess(T &value)
     {
         return (uint8_t*)&value;
     }
 
     template<typename T>
-    uint8_t* memoryAddress(std::vector<T> &vector)
+    uint8_t* memoryAccess(std::vector<T> &vector)
     {
         return (uint8_t*)vector.data();
     }

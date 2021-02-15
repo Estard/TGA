@@ -88,7 +88,7 @@ namespace tga
         }
     }
 
-    TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode, std::shared_ptr<Interface> const& tgai, bool hdrIsSRGB)
+    TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode, std::shared_ptr<Interface> const& tgai, bool doGammaCorrection)
     {
         int width, height,channels;
         int components = formatComponentCount(format);
@@ -98,7 +98,7 @@ namespace tga
         if(isFloatingPointFormat(format)){
             // Usually, we don't want any conversion when loading hdr files
             float currentGamma = 1/stbi__l2h_gamma;
-            if(stbi_is_hdr(filepath.c_str()) && !hdrIsSRGB)   
+            if(stbi_is_hdr(filepath.c_str()) && !doGammaCorrection)   
                 stbi_hdr_to_ldr_gamma(1);
 
             data = reinterpret_cast<uint8_t*>(stbi_loadf(filepath.c_str(),&width,&height,&channels,components));
@@ -217,6 +217,21 @@ namespace tga
             return;
         }
         if(!stbi_write_hdr(filename.c_str(),static_cast<int>(width),static_cast<int>(height),components,data.data()))
+            std::cerr << "[TGA] Warning: File "<< filename<< " could not be saved to disk\n";
+    }
+
+    void writePNG(std::string const& filename, uint32_t width, uint32_t height, tga::Format format, std::vector<uint8_t> const& data)
+    {
+        if(isFloatingPointFormat(format)){
+            std::cerr << "[TGA] Warning: Specified format is a floating point format and thus "<< filename << "will not be saved to disk\n"; 
+            return;
+        }
+        int components = formatComponentCount(format);
+        if(!(data.size() >= width*height*components)){
+            std::cerr << "[TGA] Warning: provided data not as much as expected, file "<<filename<<" will not be saved to disk\n";
+            return;
+        }
+        if(!stbi_write_png(filename.c_str(),static_cast<int>(width),static_cast<int>(height),components,data.data(),0))
             std::cerr << "[TGA] Warning: File "<< filename<< " could not be saved to disk\n";
     }
 }
