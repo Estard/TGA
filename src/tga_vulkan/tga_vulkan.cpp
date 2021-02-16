@@ -890,10 +890,10 @@ namespace tga
             case RepeatMode::clampBorder:
                 addressMode = vk::SamplerAddressMode::eClampToBorder;
                 break;
-            case RepeatMode::repeate:
+            case RepeatMode::repeat:
                 addressMode = vk::SamplerAddressMode::eRepeat;
                 break;
-            case RepeatMode::repeateMirrow:
+            case RepeatMode::repeatMirrow:
                 addressMode = vk::SamplerAddressMode::eMirroredRepeat;
                 break;
         }

@@ -126,7 +126,7 @@ class TerrainViewer{
             normalmapTex = tgav.createTexture({normalmap.width,normalmap.height,tga::Format::r8g8b8a8_unorm,
             (uint8_t*)normalmap.pixels.data(),normalmap.pixels.size()*sizeof(PixelRGBA),tga::SamplerMode::linear,tga::RepeatMode::clampEdge});
             colormapTex = tgav.createTexture({colormap.width,colormap.height,tga::Format::r8g8b8a8_unorm,
-            (uint8_t*)colormap.pixels.data(),colormap.pixels.size()*sizeof(PixelRGBA),tga::SamplerMode::linear,tga::RepeatMode::repeate});
+            (uint8_t*)colormap.pixels.data(),colormap.pixels.size()*sizeof(PixelRGBA),tga::SamplerMode::linear,tga::RepeatMode::repeat});
         }
         void createIndexBuffer(){
             uint32_t width = heightmap.width;

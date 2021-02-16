@@ -56,7 +56,7 @@ struct TextureInfo{
   uint8_t const *data;      // Data of the Texture. Pass a nullptr to create a texture with undefined content
   size_t dataSize;          // Size of the texture data in bytes
   SamplerMode samplerMode;  // How the Texture is sampled. Valid SamplerModes are SamplerMode::nearest (default) and   SamplerMode::linear
-  RepeatMode repeatMode;    // How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeate modes refer to tga::RepeatMode
+  RepeatMode repeatMode;    // How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeat modes refer to tga::RepeatMode
 ```
 The handle to a Texture is valid until a call to ```Interface::free(Texture texture);``` or until the destruction of the interface
 
