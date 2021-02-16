@@ -159,8 +159,8 @@ Inbetween _beginCommandBuffer_ and _endCommandBuffer_ you can call the following
 - ```bindVertexBuffer(Buffer buffer)```Use a Buffer as a vertex-buffer
 - ```bindIndexBuffer(Buffer buffer)```Use a Buffer as an index-buffer
 - ```bindInputSet(InputSet inputSet)```Bind all Bindings specified in the InputSet 
-- ```draw(uint32_t vertexCount, uint32_t firstVertex)```Issue a draw command with the number of vertices and an offset into the currently bound vertex-buffer
-- ```drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset)```Issue am indexed draw command with the number of indices, an offset into the currently bound index-buffer and an offset into the currently bound vertex-buffer
+- ```draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount=1, uint32_t firstInstance=0)```Issue a draw command with the number of vertices and an offset into the currently bound vertex-buffer. Changing the values for instanceCount and firstInstance can be used for instanced rendering.
+- ```drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount=1, uint32_t firstInstance=0)```Issue am indexed draw command with the number of indices, an offset into the currently bound index-buffer and an offset into the currently bound vertex-buffer. Changing the values for instanceCount and firstInstance can be used for instanced rendering.
 - ```dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)```Dispatches a compute shader with the specified number of work groups in each each dimension. Each dimension cannot be zero
 
 To execute a CommandBuffer call ```Interface::execute(CommandBuffer commandBuffer)```
