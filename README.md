@@ -3,7 +3,16 @@
 
 ### Development Environment
 
-Should simply loading the cmake project not work:
+#### Dependencies
+Building TGA is dependent on the following:
+- [Vulkan SDK](https://vulkan.lunarg.com/sdk/home) **Installation Required**
+- [GLFW](https://www.glfw.org/) 
+- [GLM](https://github.com/g-truc/glm) 
+- [stb single-file public domain libraries ](https://github.com/nothings/stb)
+
+GLFW, GLM and stb are included as submodules and are optional to install globally
+
+Should, after installing the vulkan SDK, simply loading the CMake project not work, try to set up the development environment manually
 - For the dependencies follow the instructions from [vulkan-tutorial.com](https://vulkan-tutorial.com/Development_environment)
 - Add TGA/include to additional includes
 - Add the source file of TGA/src/tga_*api_you_want_use* to your project
