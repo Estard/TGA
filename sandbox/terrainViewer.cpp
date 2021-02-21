@@ -161,7 +161,7 @@ class TerrainViewer{
             rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::sampler},{tga::BindingType::sampler},
                 {tga::BindingType::sampler},{tga::BindingType::uniformBuffer}}});
             rpInfo.rasterizerConfig.frontFace = tga::FrontFace::counterclockwise;
-            rpInfo.rasterizerConfig.depthCompareOp = tga::CompareOperation::lessEqual;
+            rpInfo.perSampleOperations.depthCompareOp = tga::CompareOperation::lessEqual;
             rpInfo.rasterizerConfig.cullMode = tga::CullMode::back;
             //rpInfo.rasterizerConfig.polygonMode = tga::PolygonMode::wireframe;
             rpInfo.clearOperations = tga::ClearOperation::all;

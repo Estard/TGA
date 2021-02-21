@@ -285,8 +285,8 @@ class ObjViewer: public Framework
 
         renderPass = tgai->createRenderPass({
                 {vs,fs},_frameworkWindow,tga::ClearOperation::all,
-                {tga::CompareOperation::less,
-                    tga::FrontFace::counterclockwise, tga::CullMode::back},
+                {tga::FrontFace::counterclockwise, tga::CullMode::back},
+                {tga::CompareOperation::less},
                 inputLayout,
                 { //Vertex Layout
                     sizeof(Vertex), {

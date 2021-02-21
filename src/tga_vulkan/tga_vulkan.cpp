@@ -703,11 +703,11 @@ namespace tga
         vk::PipelineViewportStateCreateInfo viewportState{{},1,&viewport,1,&scissor};
         auto rasterizer = determineRasterizerState(renderPassInfo.rasterizerConfig);
         vk::PipelineMultisampleStateCreateInfo multisampling{};
-        vk::Bool32 depthTest = (renderPassInfo.rasterizerConfig.depthCompareOp != CompareOperation::ignore)?VK_TRUE:VK_FALSE;
-        auto compOp = determineDepthCompareOp(renderPassInfo.rasterizerConfig.depthCompareOp);
+        vk::Bool32 depthTest = (renderPassInfo.perSampleOperations.depthCompareOp != CompareOperation::ignore)?VK_TRUE:VK_FALSE;
+        auto compOp = determineDepthCompareOp(renderPassInfo.perSampleOperations.depthCompareOp);
         vk::PipelineDepthStencilStateCreateInfo depthStencil{{},depthTest,depthTest,compOp};
         
-        auto colorBlendAttachment = determineColorBlending(renderPassInfo.rasterizerConfig);
+        auto colorBlendAttachment = determineColorBlending(renderPassInfo.perSampleOperations);
         vk::PipelineColorBlendStateCreateInfo colorBlending{{},VK_FALSE,vk::LogicOp::eCopy,1,&colorBlendAttachment,{0,0,0,0} };
        
         return device.createGraphicsPipeline({},{{},uint32_t(shaderStages.size()),shaderStages.data(),&vertexInputInfo,&inputAssembly,
@@ -983,7 +983,7 @@ namespace tga
         }
    }
 
-   vk::PipelineColorBlendAttachmentState TGAVulkan::determineColorBlending(const RasterizerConfig &config)
+   vk::PipelineColorBlendAttachmentState TGAVulkan::determineColorBlending(const PerSampleOperations &config)
    {
         vk::Bool32 enabled = config.blendEnabled?VK_TRUE:VK_FALSE;
         vk::BlendFactor srcBlendFac = determineBlendFactor(config.srcBlend);

@@ -40,7 +40,7 @@ class Particles : public Framework
         tga::RenderPassInfo rpInfo({{vertexShader,fragmentShader},_frameworkWindow, tga::ClearOperation::all});
         rpInfo.inputLayout.setLayouts.push_back(setLayout);
         rpInfo.rasterizerConfig.frontFace = tga::FrontFace::counterclockwise;
-        rpInfo.rasterizerConfig.blendEnabled = true;
+        rpInfo.perSampleOperations.blendEnabled = true;
         renderPass = tgai->createRenderPass(rpInfo);
         inputSet = tgai->createInputSet({renderPass,0,{tga::Binding(camBuffer,0),tga::Binding(pBuffer,1)}});
         

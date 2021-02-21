@@ -362,24 +362,30 @@ namespace tga
     };
 
     struct RasterizerConfig{
-        CompareOperation depthCompareOp;
+        
         FrontFace frontFace;
         CullMode cullMode;
+        PolygonMode polygonMode;
+        RasterizerConfig(FrontFace _frontFace = FrontFace::clockwise, 
+                        CullMode _cullMode = CullMode::none,
+                        PolygonMode _polygonMode = PolygonMode::solid):
+            frontFace(_frontFace),cullMode(_cullMode), polygonMode(_polygonMode){}
+    };
+
+    struct PerSampleOperations
+    {
+        CompareOperation depthCompareOp;
         bool blendEnabled;
         BlendFactor srcBlend;
         BlendFactor dstBlend;
         BlendFactor srcAlphaBlend;
         BlendFactor dstAlphaBlend;
-        PolygonMode polygonMode;
-        RasterizerConfig(CompareOperation _depthCompareOp = CompareOperation::ignore,
-                        FrontFace _frontFace = FrontFace::clockwise,CullMode _cullMode = CullMode::none,
+        PerSampleOperations(CompareOperation _depthCompareOp = CompareOperation::ignore,
                         bool _blendEnabled = false,
                         BlendFactor _srcBlend = BlendFactor::srcAlpha,BlendFactor _dstBlend = BlendFactor::oneMinusSrcAlpha,
-                        BlendFactor _srcAlphaBlend = BlendFactor::one,BlendFactor _dstAlphaBlend = BlendFactor::oneMinusSrcAlpha,
-                        PolygonMode _polygonMode = PolygonMode::solid):
-            depthCompareOp(_depthCompareOp),frontFace(_frontFace),cullMode(_cullMode),
-            blendEnabled(_blendEnabled),srcBlend(_srcBlend),dstBlend(_dstBlend),srcAlphaBlend(_srcAlphaBlend),dstAlphaBlend(_dstAlphaBlend),
-            polygonMode(_polygonMode){}
+                        BlendFactor _srcAlphaBlend = BlendFactor::one,BlendFactor _dstAlphaBlend = BlendFactor::oneMinusSrcAlpha):
+            depthCompareOp(_depthCompareOp),blendEnabled(_blendEnabled),
+            srcBlend(_srcBlend),dstBlend(_dstBlend),srcAlphaBlend(_srcAlphaBlend),dstAlphaBlend(_dstAlphaBlend){}
     };
 
     struct BindingLayout{
@@ -463,15 +469,17 @@ namespace tga
         std::vector<Shader> shaderStages; /**<The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages, etc.). If using a compute shader it has to be the only stader stage*/
         std::variant<Texture, Window> renderTarget; /**<Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time*/
         ClearOperation clearOperations; /**<Determines if the renderTarget and/or depth-buffer should be cleared*/
-        RasterizerConfig rasterizerConfig; /**<Describes the configuration the Rasterizer, i.e blending, depth-buffer, culling and polygon draw mode*/
+        RasterizerConfig rasterizerConfig; /**<Describes the configuration the Rasterizer, i.e culling and polygon draw mode*/
+        PerSampleOperations perSampleOperations; /**<Describes operations on each sample, i.e depth-buffer and blending*/
         InputLayout inputLayout; /**<Describes how the Bindings are organized*/
         VertexLayout vertexLayout; /**<Describes the format of the vertices in the vertex-buffer*/
         RenderPassInfo(std::vector<Shader> const &_shaderStages, 
                     std::variant<Texture, Window> _renderTarget, ClearOperation _clearOperations = ClearOperation::none,
-                    RasterizerConfig _rasterizerConfig = RasterizerConfig(),
+                    RasterizerConfig _rasterizerConfig = RasterizerConfig(), PerSampleOperations _perSampleOperations = PerSampleOperations(),
                     InputLayout _inputLayout = InputLayout(),VertexLayout _vertexLayout = VertexLayout()):
             shaderStages(_shaderStages),renderTarget(_renderTarget),clearOperations(_clearOperations),
-            rasterizerConfig(_rasterizerConfig),inputLayout(_inputLayout),vertexLayout(_vertexLayout){}
+            rasterizerConfig(_rasterizerConfig),perSampleOperations(_perSampleOperations),
+            inputLayout(_inputLayout),vertexLayout(_vertexLayout){}
     };
     struct CommandBufferInfo{
         CommandBufferInfo(){}
