@@ -158,8 +158,8 @@ class TerrainViewer{
             window = tgav.createWindow({w,h,tga::PresentMode::vsync});
 
             tga::RenderPassInfo rpInfo = {{vertShader,fragShader},window};
-            rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},
-                {tga::BindingType::sampler2D},{tga::BindingType::uniformBuffer}}});
+            rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::sampler},{tga::BindingType::sampler},
+                {tga::BindingType::sampler},{tga::BindingType::uniformBuffer}}});
             rpInfo.rasterizerConfig.frontFace = tga::FrontFace::counterclockwise;
             rpInfo.rasterizerConfig.depthCompareOp = tga::CompareOperation::lessEqual;
             rpInfo.rasterizerConfig.cullMode = tga::CullMode::back;

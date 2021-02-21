@@ -151,7 +151,7 @@ The InputLayout describes how Bindings are organized.
 The InputLayout is a collection of SetLayouts.
 A SetLayout is a collection of BindingLayouts.
 The BindingLayout struct consists of:
-- ```BindingType type``` The type of Binding. Either BindingType::sampler2D for a 2D texture or BindingType::uniformBuffer for a uniform-buffer
+- ```BindingType type``` The type of Binding. Either BindingType::sampler for a (2D) texture, BindingType::uniformBuffer for a uniform-buffer or BindingType::storageBuffer for a storage-buffer
 - ```uint32_t count``` The number of Bindings of the specified type. When count > 1 it is equivalent to an array of this BindingType in the shader programm 
 
 

@@ -34,10 +34,27 @@ namespace tga
         std::vector<uint32_t> indexBuffer;
     };
 
+    struct Image
+    {
+        uint32_t width, height;
+        uint32_t components;
+        std::vector<uint8_t> data;
+    };
+
+    struct HDRImage
+    {
+        uint32_t width, height;
+        uint32_t components;
+        std::vector<float> data;
+    };
+
 
     tga::Shader loadShader(std::string const& filepath, tga::ShaderType shaderType, std::shared_ptr<tga::Interface> const& tgai);
 
     TextureBundle loadTexture(std::string const& filepath, tga::Format format, tga::SamplerMode samplerMode, std::shared_ptr<tga::Interface> const& tgai, bool doGammaCorrection = false);
+
+    Image loadImage(std::string const& filepath);
+    HDRImage loadHDRImage(std::string const& filepath,bool doGammaCorrection = false);
 
     Obj loadObj(std::string const& filepath);
 
@@ -62,6 +79,7 @@ namespace tga
     {
         return (uint8_t*)vector.data();
     }
+
 }
 
 namespace std

@@ -109,6 +109,8 @@ namespace tga{
         vk::CommandPool createCommandPool(uint32_t queueFamily, vk::CommandPoolCreateFlags flags = vk::CommandPoolCreateFlags());
         uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
         Buffer_TV allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+        std::tuple<vk::ImageType, vk::ImageViewType, vk::ImageCreateFlags> determineImageTypeInfo(const TextureInfo &textureInfo);
+        std::tuple<vk::Extent3D,uint32_t> determineImageDimensions(const TextureInfo &textureInfo);
         std::pair<vk::ImageTiling, vk::ImageUsageFlags> determineImageFeatures(vk::Format &format);
         vk::Format findDepthFormat();
         DepthBuffer_TV createDepthBuffer(uint32_t width, uint32_t height);
@@ -123,7 +125,7 @@ namespace tga{
 
         void fillBuffer(size_t size,const uint8_t *data,uint32_t offset,vk::Buffer target);
         void transitionImageLayout(vk::CommandBuffer cmdBuffer, vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
-        void fillTexture(size_t size,const uint8_t *data,uint32_t width, uint32_t height,vk::Image target);
+        void fillTexture(size_t size,const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target);
 
         //Convertes
         vk::BufferUsageFlags determineBufferFlags(tga::BufferUsage usage);

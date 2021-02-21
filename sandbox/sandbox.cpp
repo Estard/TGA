@@ -141,7 +141,7 @@ class TerrainViewer{
     {   
         auto ubo = tgav.createBuffer({tga::BufferUsage::uniform,(uint8_t*)&data,sizeof(data)});
         tga::RenderPassInfo rpInfo = {{vertShader,fragShader},window};
-        rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::uniformBuffer},{tga::BindingType::sampler2D}}});
+        rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::uniformBuffer},{tga::BindingType::sampler}}});
         rpInfo.rasterizerConfig.frontFace = tga::FrontFace::counterclockwise;
         rpInfo.rasterizerConfig.depthCompareOp = tga::CompareOperation::lessEqual;
         rpInfo.rasterizerConfig.cullMode = tga::CullMode::back;
@@ -240,7 +240,7 @@ class Sandbox{
         auto firstPass = tgav.createRenderPass({{vertShader,fragShader},renderTex});
 
         tga::RenderPassInfo texturePassInfo({vertShader,textureShader},window);
-        texturePassInfo.inputLayout.setLayouts.emplace_back(tga::SetLayout({{tga::BindingType::sampler2D,1}}));
+        texturePassInfo.inputLayout.setLayouts.emplace_back(tga::SetLayout({{tga::BindingType::sampler,1}}));
         auto texturePass = tgav.createRenderPass(texturePassInfo);
 
         tga::Binding texBinding{heightTex,0,0};

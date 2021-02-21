@@ -120,7 +120,7 @@ void HeightmapViewer::createRescources()
         {{tga::BindingType::uniformBuffer},{tga::BindingType::uniformBuffer}},
         //TerrainData, WorldData
         {{tga::BindingType::uniformBuffer},{tga::BindingType::uniformBuffer}},
-        {{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},{tga::BindingType::sampler2D},{tga::BindingType::sampler2D}}
+        {{tga::BindingType::sampler},{tga::BindingType::sampler},{tga::BindingType::sampler},{tga::BindingType::sampler},{tga::BindingType::sampler}}
     }};
     terrainPass = tgai->createRenderPass({{terrainVS,terrainFS},window,tga::ClearOperation::none,
     {tga::CompareOperation::less,tga::FrontFace::clockwise,tga::CullMode::back},

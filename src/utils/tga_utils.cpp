@@ -125,6 +125,45 @@ namespace tga
         return {texture, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
     }
 
+    Image loadImage(std::string const& filepath)
+    {
+        int width, height, channels;
+        uint8_t* data = stbi_load(filepath.c_str(),&width,&height,&channels,0);
+
+        Image image{
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height),
+            static_cast<uint32_t>(channels),{}};
+        if(!data)
+            throw std::runtime_error("[TGA] Utils: Can't load image: " + filepath);
+
+        image.data.insert(image.data.end(),&data[0], &data[width*height*channels]);
+        stbi_image_free(data);
+        return image;
+    }
+    
+    HDRImage loadHDRImage(std::string const& filepath,bool doGammaCorrection)
+    {
+        int width, height, channels;
+
+        float currentGamma = 1/stbi__l2h_gamma;
+            if(!doGammaCorrection)   
+                stbi_hdr_to_ldr_gamma(1);
+        float* data = stbi_loadf(filepath.c_str(),&width,&height,&channels,0);
+        stbi_hdr_to_ldr_gamma(currentGamma);
+
+        HDRImage image{
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height),
+            static_cast<uint32_t>(channels),{}};
+        if(!data)
+            throw std::runtime_error("[TGA] Utils: Can't load image: " + filepath);
+            
+        image.data.insert(image.data.end(),&data[0], &data[width*height*channels]);
+        stbi_image_free(data);
+        return image;
+    }
+
 
     Obj loadObj(std::string const& filepath)
     {

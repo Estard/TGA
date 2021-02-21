@@ -123,17 +123,18 @@ namespace tga
     Texture TGAVulkan::createTexture(const TextureInfo &textureInfo) 
     {
         vk::Format format = determineImageFormat(textureInfo.format);
-        vk::Extent3D extent{textureInfo.width,textureInfo.height,1};
+        auto [extent, layers] = determineImageDimensions(textureInfo);
+        auto [imageType, imageViewType, flags] = determineImageTypeInfo(textureInfo);
 
         auto [tiling,usageFlags] = determineImageFeatures(format);
         
 
-        vk::Image image = device.createImage({{},vk::ImageType::e2D,format,
-            extent,1,1,vk::SampleCountFlagBits::e1,tiling,usageFlags,vk::SharingMode::eExclusive});
+        vk::Image image = device.createImage({flags,imageType,format,
+            extent,1,layers,vk::SampleCountFlagBits::e1,tiling,usageFlags,vk::SharingMode::eExclusive});
         auto mr = device.getImageMemoryRequirements(image);
         vk::DeviceMemory memory = device.allocateMemory({ mr.size, findMemoryType(mr.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal)});
         device.bindImageMemory(image,memory,0);
-        vk::ImageView view = device.createImageView({{},image,vk::ImageViewType::e2D,format,{},{vk::ImageAspectFlagBits::eColor,0,1,0,1}});
+        vk::ImageView view = device.createImageView({{},image,imageViewType,format,{},{vk::ImageAspectFlagBits::eColor,0,1,0,layers}});
 
         auto [filter, addressMode] = determineSamplerInfo(textureInfo);
         vk::Sampler sampler = device.createSampler({{},filter,filter,vk::SamplerMipmapMode::eLinear,addressMode,addressMode,addressMode});
@@ -146,7 +147,7 @@ namespace tga
         if(textureInfo.data != nullptr){
             transitionImageLayout(transitionCmdBuffer,image,vk::ImageLayout::eUndefined,vk::ImageLayout::eTransferDstOptimal);
             endOneTimeCmdBuffer(transitionCmdBuffer,graphicsCmdPool,graphicsQueue);
-            fillTexture(textureInfo.dataSize,textureInfo.data,textureInfo.width,textureInfo.height, image);
+            fillTexture(textureInfo.dataSize,textureInfo.data,extent,layers,image);
             transitionCmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
             transitionImageLayout(transitionCmdBuffer,image,vk::ImageLayout::eTransferDstOptimal,vk::ImageLayout::eGeneral);
             endOneTimeCmdBuffer(transitionCmdBuffer,graphicsCmdPool,graphicsQueue);
@@ -583,6 +584,17 @@ namespace tga
         return {buffer,memory,usage, size};
     }
 
+    std::tuple<vk::ImageType, vk::ImageViewType, vk::ImageCreateFlags> TGAVulkan::determineImageTypeInfo(const TextureInfo &textureInfo)
+    {
+        return {vk::ImageType::e2D,vk::ImageViewType::e2D,{}};
+    }
+
+    std::tuple<vk::Extent3D,uint32_t> TGAVulkan::determineImageDimensions(const TextureInfo &textureInfo)
+    {
+        return {{textureInfo.width,textureInfo.height,1},1};
+    }
+
+
     std::pair<vk::ImageTiling, vk::ImageUsageFlags> TGAVulkan::determineImageFeatures(vk::Format &format)
     {
         auto tiling = vk::ImageTiling::eOptimal;
@@ -800,7 +812,7 @@ namespace tga
             {imageAspects,0,1,0,1}}});
     }
 
-    void TGAVulkan::fillTexture(size_t size,const uint8_t *data, uint32_t width, uint32_t height, vk::Image target)
+    void TGAVulkan::fillTexture(size_t size,const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target)
     {
         auto buffer = allocateBuffer(size,vk::BufferUsageFlagBits::eTransferSrc,
             vk::MemoryPropertyFlagBits::eHostVisible|vk::MemoryPropertyFlagBits::eHostCoherent);
@@ -808,7 +820,7 @@ namespace tga
         std::memcpy(mapping,data,size);
         device.unmapMemory(buffer.memory);
         auto uploadCmd = beginOneTimeCmdBuffer(graphicsCmdPool);
-        vk::BufferImageCopy region{0,0,0,{vk::ImageAspectFlagBits::eColor,0,0,1},{0,0,0},{width,height,1}};
+        vk::BufferImageCopy region{0,0,0,{vk::ImageAspectFlagBits::eColor,0,0,layers},{0,0,0},extent};
         uploadCmd.copyBufferToImage(buffer.buffer,target,vk::ImageLayout::eTransferDstOptimal,{region}); 
         endOneTimeCmdBuffer(uploadCmd,graphicsCmdPool,graphicsQueue);
         device.destroy(buffer.buffer);
@@ -987,7 +999,7 @@ namespace tga
         switch (bindingType)
         {
             case BindingType::uniformBuffer: return vk::DescriptorType::eUniformBuffer;
-            case BindingType::sampler2D: return vk::DescriptorType::eCombinedImageSampler;
+            case BindingType::sampler: return vk::DescriptorType::eCombinedImageSampler;
             case BindingType::storageBuffer: return vk::DescriptorType::eStorageBuffer;
             default: return vk::DescriptorType::eInputAttachment;
         }

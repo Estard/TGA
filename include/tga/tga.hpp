@@ -224,10 +224,6 @@ namespace tga
         compute
     };
 
-    enum class ShaderInput{
-        uniformBuffer,
-        sampler2D
-    };
 
     enum class BufferUsage: uint32_t{
         undefined = 0x0,
@@ -326,7 +322,7 @@ namespace tga
 
     enum class BindingType{
         uniformBuffer,
-        sampler2D,
+        sampler,
         storageBuffer
     };
 

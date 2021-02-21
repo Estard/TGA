@@ -263,9 +263,9 @@ class ObjViewer: public Framework
             //Set = 0: Camera Data, Object Data
             {{{tga::BindingType::uniformBuffer},{tga::BindingType::uniformBuffer}}},
             //Set = 1: Diffuse Map
-            {{{tga::BindingType::sampler2D}}},
+            {{{tga::BindingType::sampler}}},
             //Set = 2: Normal Map
-            {{{tga::BindingType::sampler2D}}}});
+            {{{tga::BindingType::sampler}}}});
 
         
         tga::Shader vs,fs;
