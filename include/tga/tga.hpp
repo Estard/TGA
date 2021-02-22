@@ -372,7 +372,7 @@ namespace tga
             frontFace(_frontFace),cullMode(_cullMode), polygonMode(_polygonMode){}
     };
 
-    struct PerSampleOperations
+    struct PerPixelOperations
     {
         CompareOperation depthCompareOp;
         bool blendEnabled;
@@ -380,7 +380,7 @@ namespace tga
         BlendFactor dstBlend;
         BlendFactor srcAlphaBlend;
         BlendFactor dstAlphaBlend;
-        PerSampleOperations(CompareOperation _depthCompareOp = CompareOperation::ignore,
+        PerPixelOperations(CompareOperation _depthCompareOp = CompareOperation::ignore,
                         bool _blendEnabled = false,
                         BlendFactor _srcBlend = BlendFactor::srcAlpha,BlendFactor _dstBlend = BlendFactor::oneMinusSrcAlpha,
                         BlendFactor _srcAlphaBlend = BlendFactor::one,BlendFactor _dstAlphaBlend = BlendFactor::oneMinusSrcAlpha):
@@ -470,15 +470,15 @@ namespace tga
         std::variant<Texture, Window> renderTarget; /**<Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time*/
         ClearOperation clearOperations; /**<Determines if the renderTarget and/or depth-buffer should be cleared*/
         RasterizerConfig rasterizerConfig; /**<Describes the configuration the Rasterizer, i.e culling and polygon draw mode*/
-        PerSampleOperations perSampleOperations; /**<Describes operations on each sample, i.e depth-buffer and blending*/
+        PerPixelOperations perPixelOperations; /**<Describes operations on each sample, i.e depth-buffer and blending*/
         InputLayout inputLayout; /**<Describes how the Bindings are organized*/
         VertexLayout vertexLayout; /**<Describes the format of the vertices in the vertex-buffer*/
         RenderPassInfo(std::vector<Shader> const &_shaderStages, 
                     std::variant<Texture, Window> _renderTarget, ClearOperation _clearOperations = ClearOperation::none,
-                    RasterizerConfig _rasterizerConfig = RasterizerConfig(), PerSampleOperations _perSampleOperations = PerSampleOperations(),
+                    RasterizerConfig _rasterizerConfig = RasterizerConfig(), PerPixelOperations _perPixelOperations = PerPixelOperations(),
                     InputLayout _inputLayout = InputLayout(),VertexLayout _vertexLayout = VertexLayout()):
             shaderStages(_shaderStages),renderTarget(_renderTarget),clearOperations(_clearOperations),
-            rasterizerConfig(_rasterizerConfig),perSampleOperations(_perSampleOperations),
+            rasterizerConfig(_rasterizerConfig),perPixelOperations(_perPixelOperations),
             inputLayout(_inputLayout),vertexLayout(_vertexLayout){}
     };
     struct CommandBufferInfo{

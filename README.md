@@ -122,7 +122,7 @@ struct RenderPassInfo{
   std::variant<Texture, Window> renderTarget; // Where the result of the fragment shader stage will be saved. Keep in mind that a Window can have several framebuffers and only one is written at a time 
   ClearOperation clearOperations;             // Determines if the renderTarget and/or depth-buffer should be cleared
   RasterizerConfig rasterizerConfig;          // Describes the configuration the Rasterizer, i.e culling and polygon draw mode
-  PerSampleOperations perSampleOperations;    // Describes operations on each sample, i.e depth-buffer and blending*/
+  PerPixelOperations perPixelOperations;    // Describes operations on each pixel, i.e depth-buffer and blending*/./
   InputLayout inputLayout;                    // Describes how the Bindings are organized
   VertexLayout vertexLayout;                  // Describes the format of the vertices in the vertex-buffer
 ```
@@ -141,9 +141,9 @@ The RasterizerConfig struct consists of:
 - ```FrontFace frontFace```Which face of a given triangle is the front face, either FrontFace::clockwise or FrontFace::counterClockwise
 - ```CullMode cullMode```Which face to cull. Either CullMode::none, CullMode::front, CullMode::back or CullMode::all 
 - ```PolygonMode polygonMode```Whether trinagles should be filled (PolygonMode::fill) or only drawn as wireframe (PolygonMode::wireframe)
-##### PerSampleOperations
-PerSampleOperations determines depth test and blending
-The PerSampleOperations struct consists of:
+##### PerPixelOperations
+PerPixelOperations determines depth test and blending
+The PerPixelOperations struct consists of:
 - ```CompareOperation depthCompareOp``` If and how the depth test is performed. CompareOperation::ignore to disable depth-testing otherwise the equivalent of ==, <, <=, >, >=
 - ```bool blendEnabled``` Whether blending is enabled
 - ```BlendFactor srcBlend```The factor with which the source image rgb is weighted, by default BlendFactor::srcAlpha 

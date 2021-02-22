@@ -143,7 +143,7 @@ class TerrainViewer{
         tga::RenderPassInfo rpInfo = {{vertShader,fragShader},window};
         rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::uniformBuffer},{tga::BindingType::sampler}}});
         rpInfo.rasterizerConfig.frontFace = tga::FrontFace::counterclockwise;
-        rpInfo.perSampleOperations.depthCompareOp = tga::CompareOperation::lessEqual;
+        rpInfo.perPixelOperations.depthCompareOp = tga::CompareOperation::lessEqual;
         rpInfo.rasterizerConfig.cullMode = tga::CullMode::back;
         //rpInfo.rasterizerConfig.polygonMode = tga::PolygonMode::wireframe;
         rpInfo.clearOperations = tga::ClearOperation::all;

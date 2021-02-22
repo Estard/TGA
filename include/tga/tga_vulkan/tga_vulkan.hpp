@@ -136,7 +136,7 @@ namespace tga{
         vk::PipelineRasterizationStateCreateInfo determineRasterizerState(const RasterizerConfig &config);
         vk::CompareOp determineDepthCompareOp(CompareOperation compareOperation);
         vk::BlendFactor determineBlendFactor(BlendFactor blendFactor);
-        vk::PipelineColorBlendAttachmentState determineColorBlending(const PerSampleOperations &config);
+        vk::PipelineColorBlendAttachmentState determineColorBlending(const PerPixelOperations &config);
         vk::DescriptorType determineDescriptorType(tga::BindingType bindingType);
         vk::AccessFlags layoutToAccessFlags(vk::ImageLayout layout);
         vk::PipelineStageFlags layoutToPipelineStageFlags(vk::ImageLayout layout);
