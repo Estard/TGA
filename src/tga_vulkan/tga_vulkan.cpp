@@ -171,6 +171,9 @@ namespace tga
     }
     InputSet TGAVulkan::createInputSet(const InputSetInfo &inputSetInfo) 
     {
+        if(renderPasses[inputSetInfo.targetRenderPass].setLayouts.size() <= inputSetInfo.setIndex)
+            throw std::runtime_error("[TGA Vulkan] InputSet does not match layout from RenderPass");
+
         uint32_t uniformCount = 0;
         uint32_t storageCount = 0;
         uint32_t textureCount = 0;
