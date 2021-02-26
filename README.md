@@ -66,6 +66,8 @@ struct TextureInfo{
   size_t dataSize;          // Size of the texture data in bytes
   SamplerMode samplerMode;  // How the Texture is sampled. Valid SamplerModes are SamplerMode::nearest (default) and   SamplerMode::linear
   RepeatMode repeatMode;    // How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeat modes refer to tga::RepeatMode
+  TextureType textureType; // Type of the texture, by default 2D
+  uint32_t depthLayers; // If texture type is not 2D, this describes the third dimension of the image. Must be 6 for Cube
 ```
 The handle to a Texture is valid until a call to ```Interface::free(Texture texture);``` or until the destruction of the interface
 

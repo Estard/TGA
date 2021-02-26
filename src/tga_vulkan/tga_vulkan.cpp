@@ -589,12 +589,26 @@ namespace tga
 
     std::tuple<vk::ImageType, vk::ImageViewType, vk::ImageCreateFlags> TGAVulkan::determineImageTypeInfo(const TextureInfo &textureInfo)
     {
-        return {vk::ImageType::e2D,vk::ImageViewType::e2D,{}};
+        switch (textureInfo.textureType)
+        {
+            case TextureType::_2D: return {vk::ImageType::e2D,vk::ImageViewType::e2D,{}};
+            case TextureType::_2DArray: return {vk::ImageType::e2D,vk::ImageViewType::e2DArray,{}};
+            case TextureType::_3D: return {vk::ImageType::e3D,vk::ImageViewType::e3D,{}};
+            case TextureType::_Cube: return {vk::ImageType::e2D,vk::ImageViewType::eCube,vk::ImageCreateFlagBits::eCubeCompatible};
+            default: return {vk::ImageType::e2D,vk::ImageViewType::e2D,{}};
+        }
     }
 
     std::tuple<vk::Extent3D,uint32_t> TGAVulkan::determineImageDimensions(const TextureInfo &textureInfo)
     {
-        return {{textureInfo.width,textureInfo.height,1},1};
+        uint32_t depth = 1;
+        uint32_t layers = 1;
+        if(textureInfo.textureType == TextureType::_3D)
+            depth = textureInfo.depthLayers;
+        else if(textureInfo.textureType != TextureType::_2D)
+            layers = textureInfo.depthLayers;
+
+        return {{textureInfo.width,textureInfo.height,depth},layers};
     }
 
 
@@ -812,7 +826,7 @@ namespace tga
             accessFlagsOld,
             accessFlagsNew,
             oldLayout,newLayout,queueIndices.graphics,queueIndices.graphics,image,
-            {imageAspects,0,1,0,1}}});
+            {imageAspects,0,1,0,VK_REMAINING_ARRAY_LAYERS}}});
     }
 
     void TGAVulkan::fillTexture(size_t size,const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target)
