@@ -51,13 +51,7 @@ else()
 	set(GLFW_LIBRARIES ${GLFW_LIBRARY})
 	set(GLFW_INCLUDE_DIRS ${GLFW_INCLUDE_DIR})
 endif()
-# copy shared libraries
-# not necessary when building libraries
-if (WIN32)
-	# glfw dll
-	# get_filename_component(GLFW_BINARY_DIRECTORY ${GLFW_LIBRARY} DIRECTORY)
-	# file(COPY ${GLFW_BINARY_DIRECTORY}/glfw3.dll DESTINATION ${CMAKE_BINARY_DIR}/)
-endif()
+
 
 add_subdirectory(src)
 
