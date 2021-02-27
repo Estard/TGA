@@ -1,0 +1,5 @@
+add_executable(particleDemo Particles.cpp)
+target_link_libraries(particleDemo PUBLIC tga_vulkan ${CMAKE_THREAD_LIBS_INIT})
+if(WIN32)
+    set_property(TARGET particleDemo PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${EXAMPLES_WORKING_DIR}")
+endif(WIN32)

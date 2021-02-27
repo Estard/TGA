@@ -36,7 +36,7 @@ int main(){
         HeightmapViewer hv;
         auto hm = ::hm();
         float terrainHeight = hm.width;
-        hv.setHeightmap(hm.data.data(),hm.width,hm.height,10,10,terrainHeight*1.75);
+        hv.setHeightmap(hm.data.data(),hm.width,hm.height,10,10,terrainHeight*1.25);
         /*{
             auto [tex, w, h] = loadTex("someGrassyTexture.png");
             hv.setSurfaceLowTexture(tex.data(),w,h);

@@ -1,0 +1,7 @@
+find_package(Threads)
+set(EXAMPLES_WORKING_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_subdirectory(heightmapDemo)
+add_subdirectory(objViewer)
+add_subdirectory(computeTest)
+add_subdirectory(particleDemo)

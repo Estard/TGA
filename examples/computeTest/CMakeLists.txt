@@ -1,0 +1,5 @@
+add_executable(computeTest computeTest.cpp)
+target_link_libraries(computeTest PUBLIC tga_vulkan ${CMAKE_THREAD_LIBS_INIT})
+if(WIN32)
+    set_property(TARGET computeTest PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${EXAMPLES_WORKING_DIR}")
+endif(WIN32)

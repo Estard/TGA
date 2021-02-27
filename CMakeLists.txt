@@ -60,6 +60,8 @@ if (WIN32)
 endif()
 
 add_subdirectory(src)
-add_subdirectory(sandbox)
-add_subdirectory(hmViewer)
 
+if(TGA_BUILD_EXAMPLES)
+	message("Set TGA_BUILD_EXAMPLES to ${TGA_BUILD_EXAMPLES} including subdirectory")
+	add_subdirectory(examples)
+endif()

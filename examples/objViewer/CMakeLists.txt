@@ -1,0 +1,6 @@
+add_executable(objViewer ObjViewer.cpp)
+target_link_libraries(objViewer PUBLIC tga_vulkan ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(objViewer PUBLIC ${PROJECT_SOURCE_DIR}/external)
+if(WIN32)
+    set_property(TARGET objViewer PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${EXAMPLES_WORKING_DIR}")
+endif(WIN32)

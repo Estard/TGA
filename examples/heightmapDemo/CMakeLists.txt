@@ -1,0 +1,6 @@
+add_executable(heightmapDemo demo.cpp HeightmapViewer.hpp HeightmapViewer.cpp CameraController.hpp CameraController.cpp hm.hpp hm.cpp shaders.hpp)
+target_link_libraries(heightmapDemo PUBLIC tga_vulkan ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(heightmapDemo PUBLIC ${PROJECT_SOURCE_DIR}/external)
+if(WIN32)
+    set_property(TARGET heightmapDemo PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${EXAMPLES_WORKING_DIR}")
+endif(WIN32)

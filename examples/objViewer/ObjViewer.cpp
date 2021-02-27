@@ -2,8 +2,8 @@
 #include "tga/tga_math.hpp"
 #define TINYOBJLOADER_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
-#include "tiny_obj_loader.h"
-#include "stb_image.h"
+#include "tinyobjloader/tiny_obj_loader.h"
+#include "stb/stb_image.h"
 
 
 
