@@ -24,7 +24,7 @@ jobs:
     - name: submodules
       run: git submodule update --init --recursive
     - name: configure
-      run: cmake .
+      run: cmake . -D TGA_BUILD_EXAMPLES=1
     - name: make 
       run: make -j${nproc}
     - uses: actions/upload-artifact@v1
