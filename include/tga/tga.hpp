@@ -218,7 +218,6 @@ namespace tga
 
     //enum classes
     enum class ShaderType{
-        undefined,
         vertex,
         fragment,
         compute
