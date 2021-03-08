@@ -24,18 +24,18 @@ jobs:
     - name: submodules
       run: git submodule update --init --recursive
     - name: configure
-      run: cmake .
+      run: cmake . -D TGA_BUILD_EXAMPLES=1
     - name: make 
       run: make -j${nproc}
     - uses: actions/upload-artifact@v1
       with:
-        name: sandbox
-        path: sandbox/sandbox
+        name: heightmapDemo
+        path: examples/heightmapDemo/heightmapDemo
     - uses: actions/upload-artifact@v1
       with:
-        name: terrainViewer
-        path: sandbox/terrainViewer
+        name: objViewer
+        path: examples/objViewer/objViewer
     - uses: actions/upload-artifact@v1
       with:
-        name: particles
-        path: sandbox/particles
+        name: particleDemo
+        path: examples/particleDemo/particleDemo
