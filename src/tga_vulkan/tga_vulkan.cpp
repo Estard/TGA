@@ -911,18 +911,18 @@ namespace tga
         if(textureInfo.samplerMode==SamplerMode::linear)
             filter = vk::Filter::eLinear;
         vk::SamplerAddressMode addressMode;
-        switch (textureInfo.repeatMode)
+        switch (textureInfo.addressMode)
         {
-            case RepeatMode::clampEdge :
+            case AddressMode::clampEdge :
                 addressMode=vk::SamplerAddressMode::eClampToEdge;
                 break;  
-            case RepeatMode::clampBorder:
+            case AddressMode::clampBorder:
                 addressMode = vk::SamplerAddressMode::eClampToBorder;
                 break;
-            case RepeatMode::repeat:
+            case AddressMode::repeat:
                 addressMode = vk::SamplerAddressMode::eRepeat;
                 break;
-            case RepeatMode::repeatMirrow:
+            case AddressMode::repeatMirrow:
                 addressMode = vk::SamplerAddressMode::eMirroredRepeat;
                 break;
         }

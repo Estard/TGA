@@ -14,7 +14,7 @@ void HeightmapViewer::setHeightmap(float* data, uint32_t imageWidth, uint32_t im
     if(heightmap)
         tgai->free(heightmap);
     heightmapInfo = {imageWidth,imageHeight,tga::Format::r32_sfloat,(uint8_t*)data,
-        imageWidth*imageHeight*sizeof(float), tga::SamplerMode::linear,tga::RepeatMode::clampEdge};
+        imageWidth*imageHeight*sizeof(float), tga::SamplerMode::linear,tga::AddressMode::clampEdge};
     heightmap = tgai->createTexture(heightmapInfo);
     tData.terrainScale = glm::vec3(terrainWidth,terrainHeight, terrainDepth);
 }
@@ -23,25 +23,25 @@ void HeightmapViewer::setSurfaceLowTexture(uint8_t *rgba_data, uint32_t width, u
 {
     if(grassTex)
         tgai->free(grassTex);
-    grassTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+    grassTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::AddressMode::repeat});
 }
 void HeightmapViewer::setSurfaceHighTexture(uint8_t *rgba_data, uint32_t width, uint32_t height)
 {
     if(snowTex)
         tgai->free(snowTex);
-    snowTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+    snowTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::AddressMode::repeat});
 }
 void HeightmapViewer::setSideLowTexture(uint8_t *rgba_data, uint32_t width, uint32_t height)
 {
     if(dirtTex)
         tgai->free(dirtTex);
-    dirtTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+    dirtTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::AddressMode::repeat});
 }
 void HeightmapViewer::setSideHighTexture(uint8_t *rgba_data, uint32_t width, uint32_t height)
 {
     if(rockTex)
         tgai->free(rockTex);
-    rockTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+    rockTex = tgai->createTexture({width,height,tga::Format::r8g8b8a8_srgb,rgba_data,4*width*height,tga::SamplerMode::linear,tga::AddressMode::repeat});
 }
 
 
@@ -131,13 +131,13 @@ void HeightmapViewer::createRescources()
     uint8_t rock[] = {0x5a,0x4d,0x41,150};
     uint8_t snow[] = {0xfa,0xfa,0xfb,200};
     if(!grassTex)
-        grassTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,grass,4,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+        grassTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,grass,4,tga::SamplerMode::linear,tga::AddressMode::repeat});
     if(!dirtTex)
-        dirtTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,dirt,4,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+        dirtTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,dirt,4,tga::SamplerMode::linear,tga::AddressMode::repeat});
     if(!rockTex)
-        rockTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,rock,4,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+        rockTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,rock,4,tga::SamplerMode::linear,tga::AddressMode::repeat});
     if(!snowTex)
-        snowTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,snow,4,tga::SamplerMode::linear,tga::RepeatMode::repeat});
+        snowTex = tgai->createTexture({1,1,tga::Format::r8g8b8a8_srgb,snow,4,tga::SamplerMode::linear,tga::AddressMode::repeat});
 
 
     camIS = tgai->createInputSet({terrainPass,0,{{camDataUB,0},{camMetaDataUB,1}}});

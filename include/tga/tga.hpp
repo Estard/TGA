@@ -253,7 +253,7 @@ namespace tga
         linear
     };
 
-    enum class RepeatMode{
+    enum class AddressMode{
         clampBorder,
         clampEdge,
         repeat,
@@ -447,20 +447,20 @@ namespace tga
         uint8_t const *data; /**<Data of the Texture. Pass a nullptr to create a texture with undefined content*/
         size_t dataSize; /**<Size of the texture data in bytes*/
         SamplerMode samplerMode; /**<How the Texture is sampled. Valid SamplerModes are SamplerMode::nearest (default) and   SamplerMode::linear*/
-        RepeatMode repeatMode; /**<How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeat modes refer to tga::RepeatMode*/
+        AddressMode addressMode; /**<How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all repeat modes refer to tga::AddressMode*/
         TextureType textureType; /**<Type of the texture, by default 2D*/
         uint32_t depthLayers; /**<If texture type is not 2D, this describes the third dimension of the image. Must be 6 for Cube */
         TextureInfo(uint32_t _width, uint32_t _height, Format _format, uint8_t const *_data, size_t _dataSize,
-                    SamplerMode _samplerMode = SamplerMode::nearest, RepeatMode _repeateMode = RepeatMode::clampBorder,
+                    SamplerMode _samplerMode = SamplerMode::nearest, AddressMode _repeateMode = AddressMode::clampBorder,
                     TextureType _textureType= TextureType::_2D, uint32_t _depthLayers = 1):
             width(_width), height(_height), format(_format), data(_data), dataSize(_dataSize), samplerMode(_samplerMode),
-            repeatMode(_repeateMode),textureType(_textureType),depthLayers(_depthLayers){}
+            addressMode(_repeateMode),textureType(_textureType),depthLayers(_depthLayers){}
 
         TextureInfo(uint32_t _width, uint32_t _height, Format _format, std::vector<uint8_t> const &_data = std::vector<uint8_t>(), 
-                SamplerMode _samplerMode = SamplerMode::nearest, RepeatMode _repeateMode = RepeatMode::clampBorder, 
+                SamplerMode _samplerMode = SamplerMode::nearest, AddressMode _repeateMode = AddressMode::clampBorder, 
                 TextureType _textureType = TextureType::_2D, uint32_t _depthLayers = 1):
         width(_width), height(_height), format(_format), data(_data.data()), dataSize(_data.size()), samplerMode(_samplerMode),
-        repeatMode(_repeateMode),textureType(_textureType),depthLayers(_depthLayers){}
+        addressMode(_repeateMode),textureType(_textureType),depthLayers(_depthLayers){}
     };
     struct WindowInfo{
         uint32_t width; /**<Width of the Window in pixels*/
