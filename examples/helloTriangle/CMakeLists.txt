@@ -1,0 +1,5 @@
+add_executable(helloTriangle helloTriangle.cpp)
+target_link_libraries(helloTriangle PUBLIC tga_vulkan tga_utils ${CMAKE_THREAD_LIBS_INIT})
+if(WIN32)
+    set_property(TARGET helloTriangle PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${EXAMPLES_WORKING_DIR}")
+endif(WIN32)
