@@ -1,9 +1,29 @@
 #pragma once
 #include "tga/tga.hpp"
 #include "tga/tga_math.hpp"
+
+#if defined(_MSC_VER)
+#pragma warning(push, 0)
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#else
+// Disable Warnings for external libs
+#endif
+
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 #include "tinyobjloader/tiny_obj_loader.h"
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#else
+// Enable Warnings again
+#endif
 
 
 namespace tga
