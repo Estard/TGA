@@ -3,10 +3,9 @@
 #include "tga/tga_hash.hpp"
 #include "vulkan/vulkan.hpp"
 
-namespace tga{
-
-
-    struct Window_TV{
+namespace tga
+{
+    struct Window_TV {
         vk::SurfaceKHR surface;
         vk::SwapchainKHR swapchain;
         vk::Extent2D extent;
@@ -20,13 +19,11 @@ namespace tga{
         uint32_t currentFrameIndex;
     };
 
-
-    class VulkanWSI : public WSI
-    {
-        public:
+    class VulkanWSI : public WSI {
+    public:
         VulkanWSI();
         ~VulkanWSI();
-        Window createWindow(const WindowInfo &windowInfo) override;
+        Window createWindow(const WindowInfo& windowInfo) override;
         void setWindowTitle(Window window, const char* title) override;
         void free(Window window) override;
         uint32_t aquireNextImage(Window window) override;
@@ -35,7 +32,8 @@ namespace tga{
 
         bool windowShouldClose(Window window) override;
 
-        void setVulkanHandles(vk::Instance _instance, vk::PhysicalDevice _pDevice, vk::Device _device, vk::Queue _presentQueue, uint32_t _queueFamiliy);
+        void setVulkanHandles(vk::Instance _instance, vk::PhysicalDevice _pDevice, vk::Device _device,
+                              vk::Queue _presentQueue, uint32_t _queueFamiliy);
         std::vector<const char*> getRequiredExtensions();
 
         bool keyDown(Window window, Key key) override;
@@ -43,12 +41,11 @@ namespace tga{
 
         std::pair<uint32_t, uint32_t> screenResolution() override;
 
-
-
-        //Extras
+        // Extras
         Window_TV& getWindow(Window window);
-        std::unordered_map<Window,Window_TV> windows;
-        private:
+        std::unordered_map<Window, Window_TV> windows;
+
+    private:
         vk::Instance instance;
         vk::PhysicalDevice pDevice;
         vk::Device device;
@@ -57,9 +54,7 @@ namespace tga{
 
         vk::SurfaceFormatKHR chooseSurfaceFormat(vk::SurfaceKHR surface);
         vk::PresentModeKHR choosePresentMode(vk::SurfaceKHR surface, PresentMode wantedPresentMode);
-        vk::Extent2D chooseSwapExtent(vk::SurfaceKHR surface,const WindowInfo &windowInfo);
-        
-
+        vk::Extent2D chooseSwapExtent(vk::SurfaceKHR surface, const WindowInfo& windowInfo);
     };
 
-};
+};  // namespace tga
