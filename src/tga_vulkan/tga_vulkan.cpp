@@ -973,7 +973,7 @@ namespace tga
     {
         auto filter = vk::Filter::eNearest;
         if (textureInfo.samplerMode == SamplerMode::linear) filter = vk::Filter::eLinear;
-        vk::SamplerAddressMode addressMode;
+        vk::SamplerAddressMode addressMode{vk::SamplerAddressMode::eClampToBorder};
         switch (textureInfo.addressMode) {
             case AddressMode::clampEdge: addressMode = vk::SamplerAddressMode::eClampToEdge; break;
             case AddressMode::clampBorder: addressMode = vk::SamplerAddressMode::eClampToBorder; break;
