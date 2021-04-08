@@ -158,7 +158,9 @@ namespace tga
     void VulkanWSI::presentImage(Window window)
     {
         auto &handle = windows[window];
-        presentQueue.presentKHR({1, &handle.renderFinishedSemaphore, 1, &handle.swapchain, &handle.currentFrameIndex});
+        auto res = presentQueue.presentKHR({1, &handle.renderFinishedSemaphore, 1, &handle.swapchain, &handle.currentFrameIndex});
+        if(res != vk::Result::eSuccess)
+            std::cerr << "[TGA Vulkan] Warning: Window Surface has become suboptimal\n";
     }
 
     bool VulkanWSI::windowShouldClose(Window window)
