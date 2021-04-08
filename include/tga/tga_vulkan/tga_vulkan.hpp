@@ -54,9 +54,9 @@ namespace tga
          */
         void present(Window window) override;
 
-        /** \copydoc Interface::setWindowTitel(Window window, const std::string &title)
+        /** \copydoc Interface::setWindowTitle(Window window, const std::string &title)
          */
-        void setWindowTitel(Window window, const std::string &title) override;
+        void setWindowTitle(Window window, const std::string &title) override;
 
         /** \copydoc Interface::windowShouldClose(Window window)
          */

@@ -469,7 +469,7 @@ namespace tga
         /** \brief Changes title of window.
          * \param title New title of window
          */
-        virtual void setWindowTitel(Window window, const std::string &title) = 0;
+        virtual void setWindowTitle(Window window, const std::string &title) = 0;
 
         /** \brief True if user has issued a close command (pressed x) on the window.
          */

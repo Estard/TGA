@@ -464,7 +464,7 @@ namespace tga
         endOneTimeCmdBuffer(cmdBuffer, graphicsCmdPool, graphicsQueue);
     }
 
-    void TGAVulkan::setWindowTitel(Window window, const std::string &title)
+    void TGAVulkan::setWindowTitle(Window window, const std::string &title)
     {
         wsi.setWindowTitle(window, title.c_str());
     }
@@ -774,20 +774,22 @@ namespace tga
         vk::PipelineColorBlendStateCreateInfo colorBlending{
             {}, VK_FALSE, vk::LogicOp::eCopy, 1, &colorBlendAttachment, {0, 0, 0, 0}};
 
-        return device.createGraphicsPipeline({}, {{},
-                                                  uint32_t(shaderStages.size()),
-                                                  shaderStages.data(),
-                                                  &vertexInputInfo,
-                                                  &inputAssembly,
-                                                  nullptr,
-                                                  &viewportState,
-                                                  &rasterizer,
-                                                  &multisampling,
-                                                  &depthStencil,
-                                                  &colorBlending,
-                                                  &dynamicState,
-                                                  pipelineLayout,
-                                                  renderPass});
+        return device
+            .createGraphicsPipeline({}, {{},
+                                         uint32_t(shaderStages.size()),
+                                         shaderStages.data(),
+                                         &vertexInputInfo,
+                                         &inputAssembly,
+                                         nullptr,
+                                         &viewportState,
+                                         &rasterizer,
+                                         &multisampling,
+                                         &depthStencil,
+                                         &colorBlending,
+                                         &dynamicState,
+                                         pipelineLayout,
+                                         renderPass})
+            .value;
     }
     std::pair<vk::Pipeline, vk::PipelineBindPoint> TGAVulkan::makePipeline(const RenderPassInfo &renderPassInfo,
                                                                            vk::PipelineLayout pipelineLayout,
@@ -801,8 +803,11 @@ namespace tga
             if (shader.type == ShaderType::compute) {
                 if (renderPassInfo.shaderStages.size() == 1) {
                     return {
-                        device.createComputePipeline(
-                            {}, {{}, {{}, vk::ShaderStageFlagBits::eCompute, shader.module, "main"}, pipelineLayout}),
+                        device
+                            .createComputePipeline(
+                                {},
+                                {{}, {{}, vk::ShaderStageFlagBits::eCompute, shader.module, "main"}, pipelineLayout})
+                            .value,
                         vk::PipelineBindPoint::eCompute};
                 } else {
                     isValid = false;
