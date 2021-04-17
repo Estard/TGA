@@ -35,6 +35,7 @@ find_package(GLM)
 if(NOT GLM_FOUND)
 	message(STATUS "GLM not found, including submodule explizitly")
 	add_subdirectory(external/glm)
+	set(GLM_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/external/glm)
 endif()
 
 find_package(GLFW)

@@ -1,6 +1,5 @@
 
 find_package(Vulkan REQUIRED)
-find_package(GLM REQUIRED)
 
 add_subdirectory(WSI_glfw)
 set(TGA_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../include")
