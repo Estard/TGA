@@ -217,7 +217,7 @@ namespace tga
     {
         if (!isFloatingPointFormat(format)) {
             std::cerr << "[TGA] Warning: Specified format is not a floating point format and thus " << filename
-                      << "will not be saved to disk\n";
+                      << " will not be saved to disk\n";
             return;
         }
         int components = formatComponentCount(format);
@@ -236,7 +236,7 @@ namespace tga
     {
         if (isFloatingPointFormat(format)) {
             std::cerr << "[TGA] Warning: Specified format is a floating point format and thus " << filename
-                      << "will not be saved to disk\n";
+                      << " will not be saved to disk\n";
             return;
         }
         int components = formatComponentCount(format);
