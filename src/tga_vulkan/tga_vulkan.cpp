@@ -978,7 +978,7 @@ namespace tga
             case AddressMode::clampEdge: addressMode = vk::SamplerAddressMode::eClampToEdge; break;
             case AddressMode::clampBorder: addressMode = vk::SamplerAddressMode::eClampToBorder; break;
             case AddressMode::repeat: addressMode = vk::SamplerAddressMode::eRepeat; break;
-            case AddressMode::repeatMirrow: addressMode = vk::SamplerAddressMode::eMirroredRepeat; break;
+            case AddressMode::repeatMirror: addressMode = vk::SamplerAddressMode::eMirroredRepeat; break;
         }
         return {filter, addressMode};
     }

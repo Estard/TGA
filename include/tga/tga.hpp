@@ -178,7 +178,7 @@ namespace tga
 
     enum class SamplerMode { nearest, linear };
 
-    enum class AddressMode { clampBorder, clampEdge, repeat, repeatMirrow };
+    enum class AddressMode { clampBorder, clampEdge, repeat, repeatMirror };
 
     enum class PresentMode {
         immediate,
