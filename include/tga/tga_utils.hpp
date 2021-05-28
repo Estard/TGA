@@ -67,6 +67,10 @@ namespace tga
                            std::shared_ptr<tga::Interface> const& tgai);
 
     TextureBundle loadTexture(std::string const& filepath, tga::Format format, tga::SamplerMode samplerMode,
+                              tga::AddressMode addressMode, std::shared_ptr<tga::Interface> const& tgai,
+                              bool doGammaCorrection = false);
+
+    TextureBundle loadTexture(std::string const& filepath, tga::Format format, tga::SamplerMode samplerMode,
                               std::shared_ptr<tga::Interface> const& tgai, bool doGammaCorrection = false);
 
     Image loadImage(std::string const& filepath);

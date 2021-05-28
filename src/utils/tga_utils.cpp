@@ -80,7 +80,7 @@ namespace tga
     }
 
     TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode,
-                              std::shared_ptr<Interface> const& tgai, bool doGammaCorrection)
+                              AddressMode addressMode, std::shared_ptr<Interface> const& tgai, bool doGammaCorrection)
     {
         int width, height, channels;
         int components = formatComponentCount(format);
@@ -103,11 +103,17 @@ namespace tga
 
         if (!data) throw std::runtime_error("[TGA] Utils: Can't load image: " + filepath);
 
-        auto texture = tgai->createTexture(
-            {static_cast<uint32_t>(width), static_cast<uint32_t>(height), format, data, dataSize, samplerMode});
+        auto texture = tgai->createTexture({static_cast<uint32_t>(width), static_cast<uint32_t>(height), format, data,
+                                            dataSize, samplerMode, addressMode});
 
         stbi_image_free(data);
         return {texture, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+    }
+
+    TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode,
+                              std::shared_ptr<Interface> const& tgai, bool doGammaCorrection)
+    {
+        return loadTexture(filepath, format, samplerMode, tga::AddressMode::clampBorder, tgai, doGammaCorrection);
     }
 
     Image loadImage(std::string const& filepath)
