@@ -159,6 +159,7 @@ namespace tga
 
         // Convert the data into our representation
         std::vector<Vertex> preVertexBuffer;
+        uint32_t pvb_count = 0;
         for (const auto& shape : shapes) {
             for (const auto& index : shape.mesh.indices) {
                 Vertex vertex;
@@ -173,6 +174,7 @@ namespace tga
                     vertex.uv = {attrib.texcoords[2 * index.texcoord_index + 0],
                                  1.f - attrib.texcoords[2 * index.texcoord_index + 1]};
                 preVertexBuffer.emplace_back(vertex);
+                pvb_count++;
             }
         }
         std::unordered_map<Vertex, uint32_t> foundVertices{};
@@ -181,7 +183,7 @@ namespace tga
 
         // Calculate Tangents
         // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
-        for (size_t i = 0; i < preVertexBuffer.size(); i += 3) {
+        for (size_t i = 0; i < pvb_count; i += 3) {
             auto& p0 = preVertexBuffer[i + 0].position;
             auto& p1 = preVertexBuffer[i + 1].position;
             auto& p2 = preVertexBuffer[i + 2].position;
@@ -205,10 +207,12 @@ namespace tga
         }
 
         // Fill final vertex and index Buffer
+        uint32_t vb_count = 0;
         for (const auto& vertex : preVertexBuffer) {
             if (!foundVertices.count(vertex)) {  // It's a new Vertex
-                foundVertices[vertex] = static_cast<uint32_t>(vertexBuffer.size());
+                foundVertices[vertex] = vb_count;//static_cast<uint32_t>(vertexBuffer.size());
                 vertexBuffer.emplace_back(vertex);
+                vb_count++;
             } else {  // Seen before, average the tangents
                 auto& v = vertexBuffer[foundVertices[vertex]];
                 v.tangent += vertex.tangent;
