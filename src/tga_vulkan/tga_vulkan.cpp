@@ -767,8 +767,9 @@ namespace tga
         vk::PipelineMultisampleStateCreateInfo multisampling{};
         vk::Bool32 depthTest =
             (renderPassInfo.perPixelOperations.depthCompareOp != CompareOperation::ignore) ? VK_TRUE : VK_FALSE;
+        vk::Bool32 depthWrite = (!renderPassInfo.perPixelOperations.blendEnabled) && depthTest;
         auto compOp = determineDepthCompareOp(renderPassInfo.perPixelOperations.depthCompareOp);
-        vk::PipelineDepthStencilStateCreateInfo depthStencil{{}, depthTest, depthTest, compOp};
+        vk::PipelineDepthStencilStateCreateInfo depthStencil{{}, depthTest, depthWrite, compOp};
 
         auto colorBlendAttachment = determineColorBlending(renderPassInfo.perPixelOperations);
         vk::PipelineColorBlendStateCreateInfo colorBlending{
