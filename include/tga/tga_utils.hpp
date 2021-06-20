@@ -28,10 +28,10 @@
 namespace tga
 {
     struct Vertex {
-        glm::vec3 position;
-        glm::vec2 uv;
-        glm::vec3 normal;
-        glm::vec3 tangent;
+        alignas(16) glm::vec3 position;
+        alignas(16) glm::vec2 uv;
+        alignas(16) glm::vec3 normal;
+        alignas(16) glm::vec3 tangent;
 
         bool operator==(const Vertex& other) const
         {
