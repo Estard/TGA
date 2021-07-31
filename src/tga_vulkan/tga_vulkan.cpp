@@ -419,14 +419,14 @@ namespace tga
             allocateBuffer(mr.size, vk::BufferUsageFlagBits::eTransferDst,
                            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
-        auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
+        auto copyCmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
         transitionImageLayout(copyCmdBuffer, handle.image, vk::ImageLayout::eGeneral,
                               vk::ImageLayout::eTransferSrcOptimal);
         vk::BufferImageCopy region{0, 0, 0, {vk::ImageAspectFlagBits::eColor, 0, 0, 1}, {}, handle.extent};
         copyCmdBuffer.copyImageToBuffer(handle.image, vk::ImageLayout::eTransferSrcOptimal, staging.buffer, {region});
         transitionImageLayout(copyCmdBuffer, handle.image, vk::ImageLayout::eTransferSrcOptimal,
                               vk::ImageLayout::eGeneral);
-        endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, transferQueue);
+        endOneTimeCmdBuffer(copyCmdBuffer, graphicsCmdPool, graphicsQueue);
         auto mapping = device.mapMemory(staging.memory, 0, mr.size, {});
         std::memcpy(rbBuffer.data(), mapping, mr.size);
         device.unmapMemory(staging.memory);
