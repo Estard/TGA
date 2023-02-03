@@ -164,7 +164,14 @@ namespace tga
     // enum classes
     enum class ShaderType { vertex, fragment, compute };
 
-    enum class BufferUsage : uint32_t { undefined = 0x0, uniform = 0x1, vertex = 0x2, index = 0x4, storage = 0x8 };
+    enum class BufferUsage : uint32_t {
+        undefined = 0x0,
+        uniform = 0x1,
+        vertex = 0x2,
+        index = 0x4,
+        storage = 0x8,
+        indirect = 0x10
+    };
     inline BufferUsage operator|(BufferUsage a, BufferUsage b)
     {
         return static_cast<BufferUsage>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
@@ -219,7 +226,11 @@ namespace tga
         r32g32b32_sfloat,
         r32g32b32a32_uint,
         r32g32b32a32_sint,
-        r32g32b32a32_sfloat
+        r32g32b32a32_sfloat,
+        r16_sfloat,
+        r16g16_sfloat,
+        r16g16b16_sfloat,
+        r16g16b16a16_sfloat
     };
 
     enum class CompareOperation { ignore, equal, greater, greaterEqual, less, lessEqual };
@@ -318,8 +329,9 @@ namespace tga
         {}
     };
     struct BufferInfo {
-        BufferUsage usage; /**<Usage flags of the Buffer. Valid Usage flags are BufferUsage::uniform,
-                              BufferUsage::vertex and BufferUsage::index. Others are work in progress*/
+        BufferUsage
+            usage; /**<Usage flags of the Buffer. Valid Usage flags are BufferUsage::uniform,
+                      BufferUsage::vertex, BufferUsage::index and BufferUsage::indirect. Others are work in progress*/
         uint8_t const
             *data;       /**<Data of the Buffer to be uploaded. Alignment requirements are the users responsibility*/
         size_t dataSize; /**<Size of the buffer data in bytes*/
@@ -391,16 +403,16 @@ namespace tga
             shaderStages; /**<The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the
                              shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages,
                              etc.). If using a compute shader it has to be the only stader stage*/
-        std::variant<Texture, Window>
-            renderTarget; /**<Where the result of the fragment shader stage will be saved. Keep in mind that a Window
-                             can have several framebuffers and only one is written at a time*/
+        using RenderTarget = std::variant<Texture, Window, std::vector<Texture>>;
+        RenderTarget renderTarget; /**<Where the result of the fragment shader stage will be saved. Keep in mind that a
+                          Window can have several framebuffers and only one is written at a time*/
         ClearOperation clearOperations; /**<Determines if the renderTarget and/or depth-buffer should be cleared*/
         RasterizerConfig
             rasterizerConfig; /**<Describes the configuration the Rasterizer, i.e culling and polygon draw mode*/
         PerPixelOperations perPixelOperations; /**<Describes operations on each sample, i.e depth-buffer and blending*/
         InputLayout inputLayout;               /**<Describes how the Bindings are organized*/
         VertexLayout vertexLayout;             /**<Describes the format of the vertices in the vertex-buffer*/
-        RenderPassInfo(std::vector<Shader> const &_shaderStages, std::variant<Texture, Window> _renderTarget,
+        RenderPassInfo(std::vector<Shader> const &_shaderStages, RenderTarget const &_renderTarget,
                        ClearOperation _clearOperations = ClearOperation::none,
                        RasterizerConfig _rasterizerConfig = RasterizerConfig(),
                        PerPixelOperations _perPixelOperations = PerPixelOperations(),
@@ -414,7 +426,24 @@ namespace tga
         CommandBufferInfo() {}
     };
 
-    /** \brief The abstract Interface to a Graphics API
+    struct DrawIndirectCommand {
+        uint32_t vertexCount;
+        uint32_t instanceCount;
+        uint32_t firstVertex;
+        uint32_t firstInstance;
+    };
+    static_assert(sizeof(DrawIndirectCommand) == 4 * sizeof(uint32_t));
+
+    struct DrawIndexedIndirectCommand {
+        uint32_t indexCount;
+        uint32_t instanceCount;
+        uint32_t firstIndex;
+        int32_t vertexOffset;
+        uint32_t firstInstance;
+    };
+    static_assert(sizeof(DrawIndexedIndirectCommand) == 5 * sizeof(uint32_t));
+
+    /** \brief The abstract Interface to the Trainings Graphics API
      *
      */
     class Interface {
@@ -439,6 +468,10 @@ namespace tga
                           uint32_t firstInstance = 0) = 0;
         virtual void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset,
                                  uint32_t instanceCount = 1, uint32_t firstInstance = 0) = 0;
+        virtual void drawIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
+                                  uint32_t stride = sizeof(tga::DrawIndirectCommand)) = 0;
+        virtual void drawIndexedIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
+                                         uint32_t stride = sizeof(tga::DrawIndexedIndirectCommand)) = 0;
         virtual void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) = 0;
         virtual CommandBuffer endCommandBuffer() = 0;
         virtual void execute(CommandBuffer commandBuffer) = 0;

@@ -101,17 +101,14 @@ namespace tga
 
 }  // namespace tga
 
-namespace std
-{
-    template <>
-    struct hash<tga::Vertex> {
-        size_t operator()(tga::Vertex const& v) const
-        {
-            return ((hash<glm::vec3>()(v.position) ^ (hash<glm::vec3>()(v.normal) << 1)) >> 1) ^
-                   (hash<glm::vec2>()(v.uv) << 1);
-        }
-    };
-}  // namespace std
+template <>
+struct std::hash<tga::Vertex> {
+    std::size_t operator()(tga::Vertex const& v) const
+    {
+        return ((std::hash<glm::vec3>()(v.position) ^ (std::hash<glm::vec3>()(v.normal) << 1)) >> 1) ^
+               (std::hash<glm::vec2>()(v.uv) << 1);
+    }
+};
 
 namespace tga
 {

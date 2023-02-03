@@ -325,6 +325,14 @@ namespace tga
     {
         currentRecording.cmdBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
     }
+    void TGAVulkan::drawIndirect(Buffer buffer, uint32_t drawCount, size_t offset, uint32_t stride)
+    {
+        currentRecording.cmdBuffer.drawIndirect(buffers[buffer].buffer, offset, drawCount, stride);
+    }
+    void TGAVulkan::drawIndexedIndirect(Buffer buffer, uint32_t drawCount, size_t offset, uint32_t stride)
+    {
+        currentRecording.cmdBuffer.drawIndexedIndirect(buffers[buffer].buffer, offset, drawCount, stride);
+    }
     void TGAVulkan::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
     {
         currentRecording.cmdBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
@@ -569,6 +577,7 @@ namespace tga
     {
         vk::PhysicalDeviceFeatures features;
         features.fillModeNonSolid = VK_TRUE;
+        features.multiDrawIndirect = VK_TRUE;
         return features;
     }
 
@@ -928,6 +937,9 @@ namespace tga
         if (usage & tga::BufferUsage::storage) {
             usageFlags |= vk::BufferUsageFlagBits::eStorageBuffer;
         }
+        if (usage & tga::BufferUsage::indirect) {
+            usageFlags |= vk::BufferUsageFlagBits::eIndirectBuffer;
+        }
         return usageFlags;
     }
 
@@ -966,6 +978,10 @@ namespace tga
             case Format::r32g32b32a32_uint: return vk::Format::eR32G32B32A32Uint;
             case Format::r32g32b32a32_sint: return vk::Format::eR32G32B32A32Sint;
             case Format::r32g32b32a32_sfloat: return vk::Format::eR32G32B32A32Sfloat;
+            case Format::r16_sfloat: return vk::Format::eR16Sfloat;
+            case Format::r16g16_sfloat: return vk::Format::eR16G16Sfloat;
+            case Format::r16g16b16_sfloat: return vk::Format::eR16G16B16Sfloat;
+            case Format::r16g16b16a16_sfloat: return vk::Format::eR16G16B16A16Sfloat;
             default: return vk::Format::eUndefined;
         }
     }

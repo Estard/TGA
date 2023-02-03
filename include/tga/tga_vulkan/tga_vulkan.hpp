@@ -8,7 +8,7 @@ namespace tga
 {
     /** \brief The Interface Implementation over the Vulkan API
      */
-    class TGAVulkan : public Interface {
+    class TGAVulkan final : public Interface {
     public:
         TGAVulkan();
         ~TGAVulkan();
@@ -30,6 +30,10 @@ namespace tga
                   uint32_t firstInstance = 0) override;
         void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount = 1,
                          uint32_t firstInstance = 0) override;
+        void drawIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
+                          uint32_t stride = sizeof(tga::DrawIndirectCommand)) override;
+        void drawIndexedIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
+                                 uint32_t stride = sizeof(tga::DrawIndexedIndirectCommand)) override;
         void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
         CommandBuffer endCommandBuffer() override;
         void execute(CommandBuffer commandBuffer) override;

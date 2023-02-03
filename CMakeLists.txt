@@ -67,7 +67,9 @@ endif()
 
 add_subdirectory(src)
 
-if(TGA_BUILD_EXAMPLES)
-	message("Set TGA_BUILD_EXAMPLES to ${TGA_BUILD_EXAMPLES} including subdirectory")
+option(TGA_BUILD_EXAMPLES on)
+
+#if(TGA_BUILD_EXAMPLES)
+	message("Set TGA_BUILD_EXAMPLES to ${TGA_BUILD_EXAMPLES}: including subdirectory")
 	add_subdirectory(examples)
-endif()
+#endif()
