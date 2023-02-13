@@ -44,14 +44,12 @@ int main()
     tga::RenderPass renderPassFG = tgai->createRenderPass(rpFGInfo);
     tga::InputSet ccIS = tgai->createInputSet({renderPassFG, 0, {{cc1, 0}, {cc2, 1}, {cc3, 2}, {cc4, 3}}});
 
-    // Single CommandBuffer that will be reused every frame
     tga::CommandBuffer cmdBuffer;
 
     while (!tgai->windowShouldClose(window)) {
-        // Open the CommandBuffer for recording
         tgai->beginCommandBuffer(cmdBuffer);
 
-        // Renders into two textures at the same time
+        // Renders into four textures at the same time
         tgai->setRenderPass(renderPassBG, 0);
         tgai->draw(3, 0);
 
@@ -61,10 +59,9 @@ int main()
         tgai->draw(3, 0);
 
         cmdBuffer = tgai->endCommandBuffer();
-
-        // Execute commands and show the result
         tgai->execute(cmdBuffer);
-        // You should see a white screen, meaning all 4 values have been read and applied
+
+        // You should see a white screen, meaning all 4 values have been read and properly combined
         tgai->present(window);
     }
     return 0;
