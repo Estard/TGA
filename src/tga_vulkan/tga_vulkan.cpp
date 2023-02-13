@@ -239,8 +239,38 @@ namespace tga
             if (!textureDepthBuffers.count(*renderTarget))
                 textureDepthBuffers.emplace(*renderTarget, createDepthBuffer(area.width, area.height));
             auto &depthBuffer = textureDepthBuffers[*renderTarget];
-            renderPass = makeRenderPass(renderTex.format, renderPassInfo.clearOperations, vk::ImageLayout::eGeneral);
+            renderPass = makeRenderPass({renderTex.format}, renderPassInfo.clearOperations, vk::ImageLayout::eGeneral);
             std::array<vk::ImageView, 2> attachments{renderTex.imageView, depthBuffer.imageView};
+            framebuffers.emplace_back(device.createFramebuffer({{},
+                                                                renderPass,
+                                                                static_cast<uint32_t>(attachments.size()),
+                                                                attachments.data(),
+                                                                area.width,
+                                                                area.height,
+                                                                1}));
+        } else if (auto renderTargets = std::get_if<std::vector<Texture>>(&renderPassInfo.renderTarget)) {
+            assert(!renderTargets->empty());
+
+            vk::ImageView depthBufferImageView{};
+            std::vector<vk::Format> renderTexFormats;
+            renderTexFormats.reserve(renderTargets->size());
+            std::vector<vk::ImageView> attachments;
+            attachments.reserve(renderTargets->size() + 1);
+            for (auto renderTarget : *renderTargets) {
+                auto &renderTex = textures.at(renderTarget);
+                renderTexFormats.push_back(renderTex.format);
+                attachments.push_back(renderTex.imageView);
+                if (depthBufferImageView != vk::ImageView{}) continue;
+
+                area = vk::Extent2D(renderTex.extent.width, renderTex.extent.height);
+                if (!textureDepthBuffers.count(renderTarget))
+                    textureDepthBuffers.emplace(renderTarget, createDepthBuffer(area.width, area.height));
+                depthBufferImageView = textureDepthBuffers[renderTarget].imageView;
+            }
+            attachments.push_back(depthBufferImageView);
+
+            renderPass = makeRenderPass(renderTexFormats, renderPassInfo.clearOperations, vk::ImageLayout::eGeneral);
+            // std::array<vk::ImageView, 2> attachments{renderTex.imageView, depthBuffer.imageView};
             framebuffers.emplace_back(device.createFramebuffer({{},
                                                                 renderPass,
                                                                 static_cast<uint32_t>(attachments.size()),
@@ -255,7 +285,7 @@ namespace tga
                 windowDepthBuffers.emplace(*renderTarget,
                                            createDepthBuffer(renderWindow.extent.width, renderWindow.extent.height));
             auto &depthBuffer = windowDepthBuffers[*renderTarget];
-            renderPass = makeRenderPass(renderWindow.format, renderPassInfo.clearOperations,
+            renderPass = makeRenderPass({renderWindow.format}, renderPassInfo.clearOperations,
                                         vk::ImageLayout::eColorAttachmentOptimal);
             for (uint32_t i = 0; i < renderWindow.imageViews.size(); i++) {
                 std::array<vk::ImageView, 2> attachments{renderWindow.imageViews[i], depthBuffer.imageView};
@@ -689,7 +719,8 @@ namespace tga
         return {image, view, memory};
     }
 
-    vk::RenderPass TGAVulkan::makeRenderPass(vk::Format colorFormat, ClearOperation clearOps, vk::ImageLayout layout)
+    vk::RenderPass TGAVulkan::makeRenderPass(std::vector<vk::Format> const &colorFormats, ClearOperation clearOps,
+                                             vk::ImageLayout layout)
     {
         auto colorLoadOp = vk::AttachmentLoadOp::eLoad;
         auto depthLoadOp = vk::AttachmentLoadOp::eLoad;
@@ -697,28 +728,43 @@ namespace tga
             colorLoadOp = vk::AttachmentLoadOp::eClear;
         if (clearOps == ClearOperation::all || clearOps == ClearOperation::depth)
             depthLoadOp = vk::AttachmentLoadOp::eClear;
-        std::vector<vk::AttachmentDescription> attachments{{{},
-                                                            colorFormat,
-                                                            vk::SampleCountFlagBits::e1,
-                                                            colorLoadOp,
-                                                            vk::AttachmentStoreOp::eStore,
-                                                            vk::AttachmentLoadOp::eDontCare,
-                                                            vk::AttachmentStoreOp::eDontCare,
-                                                            layout,
-                                                            layout},
-                                                           {{},
-                                                            findDepthFormat(),
-                                                            vk::SampleCountFlagBits::e1,
-                                                            depthLoadOp,
-                                                            vk::AttachmentStoreOp::eStore,
-                                                            vk::AttachmentLoadOp::eDontCare,
-                                                            vk::AttachmentStoreOp::eDontCare,
-                                                            vk::ImageLayout::eDepthStencilAttachmentOptimal,
-                                                            vk::ImageLayout::eDepthStencilAttachmentOptimal}};
-        vk::AttachmentReference colorAttachmentRef{0, vk::ImageLayout::eColorAttachmentOptimal};
-        vk::AttachmentReference depthAttachmentRef{1, vk::ImageLayout::eDepthStencilAttachmentOptimal};
-        vk::SubpassDescription subpass{
-            {}, vk::PipelineBindPoint::eGraphics, 0, 0, 1, &colorAttachmentRef, 0, &depthAttachmentRef};
+        std::vector<vk::AttachmentDescription> attachments;
+        attachments.reserve(colorFormats.size());
+        for (auto colorFormat : colorFormats) {
+            attachments.push_back({{},
+                                   colorFormat,
+                                   vk::SampleCountFlagBits::e1,
+                                   colorLoadOp,
+                                   vk::AttachmentStoreOp::eStore,
+                                   vk::AttachmentLoadOp::eDontCare,
+                                   vk::AttachmentStoreOp::eDontCare,
+                                   layout,
+                                   layout});
+        }
+        attachments.push_back({{},
+                               findDepthFormat(),
+                               vk::SampleCountFlagBits::e1,
+                               depthLoadOp,
+                               vk::AttachmentStoreOp::eStore,
+                               vk::AttachmentLoadOp::eDontCare,
+                               vk::AttachmentStoreOp::eDontCare,
+                               vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                               vk::ImageLayout::eDepthStencilAttachmentOptimal});
+
+        std::vector<vk::AttachmentReference> colorAttachmentRefs;
+        colorAttachmentRefs.reserve(colorFormats.size());
+        for (size_t i = 0; i < colorFormats.size(); ++i)
+            colorAttachmentRefs.push_back({static_cast<uint32_t>(i), vk::ImageLayout::eColorAttachmentOptimal});
+        vk::AttachmentReference depthAttachmentRef{static_cast<uint32_t>(colorAttachmentRefs.size()),
+                                                   vk::ImageLayout::eDepthStencilAttachmentOptimal};
+        vk::SubpassDescription subpass{{},
+                                       vk::PipelineBindPoint::eGraphics,
+                                       0,
+                                       0,
+                                       static_cast<uint32_t>(colorAttachmentRefs.size()),
+                                       colorAttachmentRefs.data(),
+                                       nullptr,
+                                       &depthAttachmentRef};
 
         vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
         vk::SubpassDependency subDependency{
@@ -781,8 +827,16 @@ namespace tga
         vk::PipelineDepthStencilStateCreateInfo depthStencil{{}, depthTest, depthWrite, compOp};
 
         auto colorBlendAttachment = determineColorBlending(renderPassInfo.perPixelOperations);
+
+        uint32_t numBlendAttachemnts = 1;
+        if (auto targets = std::get_if<std::vector<Texture>>(&renderPassInfo.renderTarget)) {
+            numBlendAttachemnts = static_cast<uint32_t>(targets->size());
+        }
+        std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachments(numBlendAttachemnts,
+                                                                                 colorBlendAttachment);
+
         vk::PipelineColorBlendStateCreateInfo colorBlending{
-            {}, VK_FALSE, vk::LogicOp::eCopy, 1, &colorBlendAttachment, {0, 0, 0, 0}};
+            {}, VK_FALSE, vk::LogicOp::eCopy, numBlendAttachemnts, colorBlendAttachments.data(), {0, 0, 0, 0}};
 
         return device
             .createGraphicsPipeline({}, {{},

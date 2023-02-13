@@ -120,7 +120,7 @@ namespace tga
         std::pair<vk::ImageTiling, vk::ImageUsageFlags> determineImageFeatures(vk::Format &format);
         vk::Format findDepthFormat();
         DepthBuffer_TV createDepthBuffer(uint32_t width, uint32_t height);
-        vk::RenderPass makeRenderPass(vk::Format colorFormat, ClearOperation clearOps, vk::ImageLayout layout);
+        vk::RenderPass makeRenderPass(std::vector<vk::Format> const& colorFormats, ClearOperation clearOps, vk::ImageLayout layout);
         std::vector<vk::DescriptorSetLayout> decodeInputLayout(const InputLayout &inputLayout);
         vk::Pipeline makeGraphicsPipeline(const RenderPassInfo &renderPassInfo, vk::PipelineLayout pipelineLayout,
                                           vk::RenderPass renderPass);

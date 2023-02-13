@@ -403,7 +403,7 @@ namespace tga
             shaderStages; /**<The Shaders to be executed in this RenderPass. Must be ordererd in accordance with the
                              shader stages of the graphics pipeline (i.e vertex before fragment, no duplicate stages,
                              etc.). If using a compute shader it has to be the only stader stage*/
-        using RenderTarget = std::variant<Texture, Window, std::vector<Texture>>;
+        using RenderTarget = std::variant<Texture, Window,std::vector<Texture>>;
         RenderTarget renderTarget; /**<Where the result of the fragment shader stage will be saved. Keep in mind that a
                           Window can have several framebuffers and only one is written at a time*/
         ClearOperation clearOperations; /**<Determines if the renderTarget and/or depth-buffer should be cleared*/
@@ -412,12 +412,32 @@ namespace tga
         PerPixelOperations perPixelOperations; /**<Describes operations on each sample, i.e depth-buffer and blending*/
         InputLayout inputLayout;               /**<Describes how the Bindings are organized*/
         VertexLayout vertexLayout;             /**<Describes the format of the vertices in the vertex-buffer*/
-        RenderPassInfo(std::vector<Shader> const &_shaderStages, RenderTarget const &_renderTarget,
+        RenderPassInfo(std::vector<Shader> const &_shaderStages, Window const &_renderTarget,
                        ClearOperation _clearOperations = ClearOperation::none,
                        RasterizerConfig _rasterizerConfig = RasterizerConfig(),
                        PerPixelOperations _perPixelOperations = PerPixelOperations(),
                        InputLayout _inputLayout = InputLayout(), VertexLayout _vertexLayout = VertexLayout())
             : shaderStages(_shaderStages), renderTarget(_renderTarget), clearOperations(_clearOperations),
+              rasterizerConfig(_rasterizerConfig), perPixelOperations(_perPixelOperations), inputLayout(_inputLayout),
+              vertexLayout(_vertexLayout)
+        {}
+        // Alternative Constructor with single texture
+        RenderPassInfo(std::vector<Shader> const &_shaderStages, Texture const &_renderTarget,
+                       ClearOperation _clearOperations = ClearOperation::none,
+                       RasterizerConfig _rasterizerConfig = RasterizerConfig(),
+                       PerPixelOperations _perPixelOperations = PerPixelOperations(),
+                       InputLayout _inputLayout = InputLayout(), VertexLayout _vertexLayout = VertexLayout())
+            : shaderStages(_shaderStages), renderTarget(_renderTarget), clearOperations(_clearOperations),
+              rasterizerConfig(_rasterizerConfig), perPixelOperations(_perPixelOperations), inputLayout(_inputLayout),
+              vertexLayout(_vertexLayout)
+        {}
+        // Alternative Constructor with multiple textures
+        RenderPassInfo(std::vector<Shader> const &_shaderStages, std::vector<Texture> const &_renderTargets,
+                       ClearOperation _clearOperations = ClearOperation::none,
+                       RasterizerConfig _rasterizerConfig = RasterizerConfig(),
+                       PerPixelOperations _perPixelOperations = PerPixelOperations(),
+                       InputLayout _inputLayout = InputLayout(), VertexLayout _vertexLayout = VertexLayout())
+            : shaderStages(_shaderStages), renderTarget(_renderTargets), clearOperations(_clearOperations),
               rasterizerConfig(_rasterizerConfig), perPixelOperations(_perPixelOperations), inputLayout(_inputLayout),
               vertexLayout(_vertexLayout)
         {}
