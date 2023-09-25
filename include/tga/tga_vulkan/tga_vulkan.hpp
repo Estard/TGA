@@ -2,7 +2,7 @@
 #include "tga/tga.hpp"
 #include "tga/tga_hash.hpp"
 #include "tga_vulkan_WSI.hpp"
-#include "tga_vulkan_util.hpp"
+#include "tga_vulkan_metadata.hpp"
 
 namespace tga
 {
@@ -19,6 +19,11 @@ namespace tga
         Window createWindow(const WindowInfo &windowInfo) override;
         InputSet createInputSet(const InputSetInfo &inputSetInfo) override;
         RenderPass createRenderPass(const RenderPassInfo &renderPassInfo) override;
+
+        ext::TopLevelAccelerationStructure createTopLevelAccelerationStructure(
+            const ext::TopLevelAccelerationStructureInfo &TLASInfo) override;
+        ext::BottomLevelAccelerationStructure createBottomLevelAccelerationStructure(
+            const ext::BottomLevelAccelerationStructureInfo &BLASInfo) override;
 
         void beginCommandBuffer() override;
         void beginCommandBuffer(CommandBuffer cmdBuffer) override;
@@ -92,36 +97,24 @@ namespace tga
         vk::Instance instance;
         vk::DebugUtilsMessengerEXT debugger;
         vk::PhysicalDevice pDevice;
-        QueueIndices queueIndices;
+        uint32_t renderQueueFamiliy;
         vk::Device device;
-        vk::Queue graphicsQueue;
-        vk::Queue transferQueue;
+        vk::Queue renderQueue;
         vk::CommandPool transferCmdPool;
         vk::CommandPool graphicsCmdPool;
 
-        const std::vector<const char *> getInstanceExtentensions();
-        const std::vector<const char *> getDeviceExtentensions();
-        const std::vector<const char *> getLayers();
-        vk::PhysicalDeviceFeatures getDeviceFeatures();
-        uint32_t findQueueFamily(vk::QueueFlags mask, vk::QueueFlags flags);
-        QueueIndices findQueueFamilies();
-
-        vk::Instance createInstance();
-        vk::DebugUtilsMessengerEXT createDebugger();
-        vk::PhysicalDevice choseGPU();
-        vk::Device createDevice();
-        vk::CommandPool createCommandPool(uint32_t queueFamily,
-                                          vk::CommandPoolCreateFlags flags = vk::CommandPoolCreateFlags());
         uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
-        Buffer_TV allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+        Buffer_vkData allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                                     vk::MemoryPropertyFlags properties);
         std::tuple<vk::ImageType, vk::ImageViewType, vk::ImageCreateFlags> determineImageTypeInfo(
             const TextureInfo &textureInfo);
         std::tuple<vk::Extent3D, uint32_t> determineImageDimensions(const TextureInfo &textureInfo);
         std::pair<vk::ImageTiling, vk::ImageUsageFlags> determineImageFeatures(vk::Format &format);
         vk::Format findDepthFormat();
-        DepthBuffer_TV createDepthBuffer(uint32_t width, uint32_t height);
-        vk::RenderPass makeRenderPass(std::vector<vk::Format> const& colorFormats, ClearOperation clearOps, vk::ImageLayout layout);
-        std::vector<vk::DescriptorSetLayout> decodeInputLayout(const InputLayout &inputLayout);
+        DepthBuffer_vkData createDepthBuffer(uint32_t width, uint32_t height);
+        vk::RenderPass makeRenderPass(std::vector<vk::Format> const &colorFormats, ClearOperation clearOps,
+                                      vk::ImageLayout layout);
+        std::vector<vk::DescriptorSetLayout> decodeInputLayout(InputLayout const &inputLayout);
         vk::Pipeline makeGraphicsPipeline(const RenderPassInfo &renderPassInfo, vk::PipelineLayout pipelineLayout,
                                           vk::RenderPass renderPass);
         std::pair<vk::Pipeline, vk::PipelineBindPoint> makePipeline(const RenderPassInfo &renderPassInfo,
@@ -136,31 +129,15 @@ namespace tga
                                    vk::ImageLayout newLayout);
         void fillTexture(size_t size, const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target);
 
-        // Convertes
-        vk::BufferUsageFlags determineBufferFlags(tga::BufferUsage usage);
-        vk::Format determineImageFormat(tga::Format format);
-        std::tuple<vk::Filter, vk::SamplerAddressMode> determineSamplerInfo(const TextureInfo &textureInfo);
-        vk::ShaderStageFlagBits determineShaderStage(tga::ShaderType shaderType);
-        std::vector<vk::VertexInputAttributeDescription> determineVertexAttributes(
-            const std::vector<VertexAttribute> &attributes);
-        vk::PipelineRasterizationStateCreateInfo determineRasterizerState(const RasterizerConfig &config);
-        vk::CompareOp determineDepthCompareOp(CompareOperation compareOperation);
-        vk::BlendFactor determineBlendFactor(BlendFactor blendFactor);
-        vk::PipelineColorBlendAttachmentState determineColorBlending(const PerPixelOperations &config);
-        vk::DescriptorType determineDescriptorType(tga::BindingType bindingType);
-        vk::AccessFlags layoutToAccessFlags(vk::ImageLayout layout);
-        vk::PipelineStageFlags layoutToPipelineStageFlags(vk::ImageLayout layout);
-        vk::PipelineStageFlags accessToPipelineStageFlags(vk::AccessFlags accessFlags);
-
         // Bookkeeping
-        std::unordered_map<Shader, Shader_TV> shaders;
-        std::unordered_map<Buffer, Buffer_TV> buffers;
-        std::unordered_map<Texture, Texture_TV> textures;
-        std::unordered_map<InputSet, InputSet_TV> inputSets;
-        std::unordered_map<RenderPass, RenderPass_TV> renderPasses;
-        std::unordered_map<CommandBuffer, CommandBuffer_TV> commandBuffers;
-        std::unordered_map<Texture, DepthBuffer_TV> textureDepthBuffers;
-        std::unordered_map<Window, DepthBuffer_TV> windowDepthBuffers;
+        std::unordered_map<Shader, Shader_vkData> shaders;
+        std::unordered_map<Buffer, Buffer_vkData> buffers;
+        std::unordered_map<Texture, Texture_vkData> textures;
+        std::unordered_map<InputSet, InputSet_vkData> inputSets;
+        std::unordered_map<RenderPass, RenderPass_vkData> renderPasses;
+        std::unordered_map<CommandBuffer, CommandBuffer_vkData> commandBuffers;
+        std::unordered_map<Texture, DepthBuffer_vkData> textureDepthBuffers;
+        std::unordered_map<Window, DepthBuffer_vkData> windowDepthBuffers;
 
         struct RecordingData {
             vk::CommandBuffer cmdBuffer;

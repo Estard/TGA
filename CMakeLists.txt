@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.9.4 FATAL_ERROR)
 project(tga VERSION 1.0 LANGUAGES C CXX DESCRIPTION "Trainings Graphics API")
 
 set(CMAKE_CXX_STANDARD 17)

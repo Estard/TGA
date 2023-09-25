@@ -8,7 +8,8 @@ AccessModifierOffset: -4
 NamespaceIndentation: All
 AllowShortIfStatementsOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
-PointerAlignment: Right 
+PointerAlignmentStyle: Right 
+ReferenceAlignmentStyle: Left
 BreakBeforeBraces: Custom
 ColumnLimit: 120
 ConstructorInitializerAllOnOneLineOrOnePerLine: false

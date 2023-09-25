@@ -1,87 +1,383 @@
 #include "tga/tga_vulkan/tga_vulkan.hpp"
 
 #include "tga/tga_vulkan/tga_vulkan_debug.hpp"
+#include "tga/tga_vulkan/tga_vulkan_extensions.hpp"
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                          VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                          const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                          void* pUserData)
+{
+    (void)messageSeverity;  // Warnings Silencer
+    (void)messageType;      // Warnings Silencer
+    (void)pUserData;        // Warning Silencer
+    std::cerr << "[VULKAN VALIDATION LAYER]: " << pCallbackData->pMessage << std::endl;
+    return VK_FALSE;
+}
 
 namespace tga
 {
+    namespace /*conversion*/
+    {
+
+        vk::BufferUsageFlags determineBufferFlags(tga::BufferUsage usage)
+        {
+            if (usage == BufferUsage::undefined) throw std::runtime_error("[TGA Vulkan] Buffer usage is undefined!");
+            vk::BufferUsageFlags usageFlags =
+                vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc;
+            if (usage & tga::BufferUsage::uniform) {
+                usageFlags |= vk::BufferUsageFlagBits::eUniformBuffer;
+            }
+            if (usage & tga::BufferUsage::vertex) {
+                usageFlags |= vk::BufferUsageFlagBits::eVertexBuffer;
+            }
+            if (usage & tga::BufferUsage::index) {
+                usageFlags |= vk::BufferUsageFlagBits::eIndexBuffer;
+            }
+            if (usage & tga::BufferUsage::storage) {
+                usageFlags |= vk::BufferUsageFlagBits::eStorageBuffer;
+            }
+            if (usage & tga::BufferUsage::indirect) {
+                usageFlags |= vk::BufferUsageFlagBits::eIndirectBuffer;
+            }
+            return usageFlags;
+        }
+
+        vk::Format determineImageFormat(tga::Format format)
+        {
+            switch (format) {
+                case Format::r8_uint: return vk::Format::eR8Uint;
+                case Format::r8_sint: return vk::Format::eR8Sint;
+                case Format::r8_srgb: return vk::Format::eR8Srgb;
+                case Format::r8_unorm: return vk::Format::eR8Unorm;
+                case Format::r8_snorm: return vk::Format::eR8G8Snorm;
+                case Format::r8g8_uint: return vk::Format::eR8G8Uint;
+                case Format::r8g8_sint: return vk::Format::eR8G8Sint;
+                case Format::r8g8_srgb: return vk::Format::eR8G8Srgb;
+                case Format::r8g8_unorm: return vk::Format::eR8G8Unorm;
+                case Format::r8g8_snorm: return vk::Format::eR8G8Snorm;
+                case Format::r8g8b8_uint: return vk::Format::eR8G8B8Uint;
+                case Format::r8g8b8_sint: return vk::Format::eR8G8B8Sint;
+                case Format::r8g8b8_srgb: return vk::Format::eR8G8B8Srgb;
+                case Format::r8g8b8_unorm: return vk::Format::eR8G8B8Unorm;
+                case Format::r8g8b8_snorm: return vk::Format::eR8G8B8Snorm;
+                case Format::r8g8b8a8_uint: return vk::Format::eR8G8B8A8Uint;
+                case Format::r8g8b8a8_sint: return vk::Format::eR8G8B8A8Sint;
+                case Format::r8g8b8a8_srgb: return vk::Format::eR8G8B8A8Srgb;
+                case Format::r8g8b8a8_unorm: return vk::Format::eR8G8B8A8Unorm;
+                case Format::r8g8b8a8_snorm: return vk::Format::eR8G8B8A8Snorm;
+                case Format::r32_uint: return vk::Format::eR32Uint;
+                case Format::r32_sint: return vk::Format::eR32Sint;
+                case Format::r32_sfloat: return vk::Format::eR32Sfloat;
+                case Format::r32g32_uint: return vk::Format::eR32G32Uint;
+                case Format::r32g32_sint: return vk::Format::eR32G32Sint;
+                case Format::r32g32_sfloat: return vk::Format::eR32G32Sfloat;
+                case Format::r32g32b32_uint: return vk::Format::eR32G32B32Uint;
+                case Format::r32g32b32_sint: return vk::Format::eR32G32B32Sint;
+                case Format::r32g32b32_sfloat: return vk::Format::eR32G32B32Sfloat;
+                case Format::r32g32b32a32_uint: return vk::Format::eR32G32B32A32Uint;
+                case Format::r32g32b32a32_sint: return vk::Format::eR32G32B32A32Sint;
+                case Format::r32g32b32a32_sfloat: return vk::Format::eR32G32B32A32Sfloat;
+                case Format::r16_sfloat: return vk::Format::eR16Sfloat;
+                case Format::r16g16_sfloat: return vk::Format::eR16G16Sfloat;
+                case Format::r16g16b16_sfloat: return vk::Format::eR16G16B16Sfloat;
+                case Format::r16g16b16a16_sfloat: return vk::Format::eR16G16B16A16Sfloat;
+                default: return vk::Format::eUndefined;
+            }
+        }
+
+        std::tuple<vk::Filter, vk::SamplerAddressMode> determineSamplerInfo(const TextureInfo& textureInfo)
+        {
+            auto filter = vk::Filter::eNearest;
+            if (textureInfo.samplerMode == SamplerMode::linear) filter = vk::Filter::eLinear;
+            vk::SamplerAddressMode addressMode{vk::SamplerAddressMode::eClampToBorder};
+            switch (textureInfo.addressMode) {
+                case AddressMode::clampEdge: addressMode = vk::SamplerAddressMode::eClampToEdge; break;
+                case AddressMode::clampBorder: addressMode = vk::SamplerAddressMode::eClampToBorder; break;
+                case AddressMode::repeat: addressMode = vk::SamplerAddressMode::eRepeat; break;
+                case AddressMode::repeatMirror: addressMode = vk::SamplerAddressMode::eMirroredRepeat; break;
+            }
+            return {filter, addressMode};
+        }
+
+        vk::ShaderStageFlagBits determineShaderStage(tga::ShaderType shaderType)
+        {
+            switch (shaderType) {
+                case ShaderType::vertex: return vk::ShaderStageFlagBits::eVertex;
+                case ShaderType::fragment: return vk::ShaderStageFlagBits::eFragment;
+                case ShaderType::compute: return vk::ShaderStageFlagBits::eCompute;
+                default: return vk::ShaderStageFlagBits::eAllGraphics;
+            }
+        }
+
+        std::vector<vk::VertexInputAttributeDescription> determineVertexAttributes(
+            const std::vector<VertexAttribute>& attributes)
+        {
+            std::vector<vk::VertexInputAttributeDescription> descriptions{};
+            for (uint32_t i = 0; i < attributes.size(); i++) {
+                descriptions.emplace_back(vk::VertexInputAttributeDescription(
+                    i, 0, determineImageFormat(attributes[i].format), static_cast<uint32_t>(attributes[i].offset)));
+            }
+            return descriptions;
+        }
+        vk::PipelineRasterizationStateCreateInfo determineRasterizerState(const RasterizerConfig& config)
+        {
+            vk::CullModeFlags cullFlags = vk::CullModeFlagBits::eNone;
+            vk::PolygonMode polyMode = vk::PolygonMode::eFill;
+            vk::FrontFace frontFace = vk::FrontFace::eClockwise;
+            if (config.cullMode == CullMode::back) cullFlags = vk::CullModeFlagBits::eBack;
+            if (config.cullMode == CullMode::front) cullFlags = vk::CullModeFlagBits::eFront;
+            if (config.cullMode == CullMode::all) cullFlags = vk::CullModeFlagBits::eFrontAndBack;
+            if (config.polygonMode == PolygonMode::wireframe) polyMode = vk::PolygonMode::eLine;
+            if (config.frontFace == FrontFace::counterclockwise) frontFace = vk::FrontFace::eCounterClockwise;
+            return {{}, VK_FALSE, VK_FALSE, polyMode, cullFlags, frontFace, VK_FALSE, 0, 0, 0, 1.};
+        }
+
+        vk::CompareOp determineDepthCompareOp(CompareOperation compareOperation)
+        {
+            switch (compareOperation) {
+                case CompareOperation::ignore: return vk::CompareOp::eNever;
+                case CompareOperation::equal: return vk::CompareOp::eEqual;
+                case CompareOperation::greater: return vk::CompareOp::eGreater;
+                case CompareOperation::greaterEqual: return vk::CompareOp::eGreaterOrEqual;
+                case CompareOperation::less: return vk::CompareOp::eLess;
+                case CompareOperation::lessEqual: return vk::CompareOp::eLessOrEqual;
+                default: return vk::CompareOp::eAlways;
+            }
+        }
+
+        vk::BlendFactor determineBlendFactor(BlendFactor blendFactor)
+        {
+            switch (blendFactor) {
+                case BlendFactor::zero: return vk::BlendFactor::eZero;
+                case BlendFactor::one: return vk::BlendFactor::eOne;
+                case BlendFactor::srcAlpha: return vk::BlendFactor::eSrcAlpha;
+                case BlendFactor::dstAlpha: return vk::BlendFactor::eDstAlpha;
+                case BlendFactor::oneMinusSrcAlpha: return vk::BlendFactor::eOneMinusSrcAlpha;
+                case BlendFactor::oneMinusDstAlpha: return vk::BlendFactor::eOneMinusDstAlpha;
+                default: return vk::BlendFactor::eConstantColor;
+            }
+        }
+
+        vk::PipelineColorBlendAttachmentState determineColorBlending(const PerPixelOperations& config)
+        {
+            vk::Bool32 enabled = config.blendEnabled ? VK_TRUE : VK_FALSE;
+            vk::BlendFactor srcBlendFac = determineBlendFactor(config.srcBlend);
+            vk::BlendFactor dstBlendFac = determineBlendFactor(config.dstBlend);
+            vk::BlendFactor srcAlphaBlendFac = determineBlendFactor(config.srcAlphaBlend);
+            vk::BlendFactor dstAlphaBlendFac = determineBlendFactor(config.dstAlphaBlend);
+            return {enabled,
+                    srcBlendFac,
+                    dstBlendFac,
+                    vk::BlendOp::eAdd,
+                    srcAlphaBlendFac,
+                    dstAlphaBlendFac,
+                    vk::BlendOp::eAdd,
+                    vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+                        vk::ColorComponentFlagBits::eA};
+        }
+
+        vk::DescriptorType determineDescriptorType(tga::BindingType bindingType)
+        {
+            switch (bindingType) {
+                case BindingType::uniformBuffer: return vk::DescriptorType::eUniformBuffer;
+                case BindingType::sampler: return vk::DescriptorType::eCombinedImageSampler;
+                case BindingType::storageBuffer: return vk::DescriptorType::eStorageBuffer;
+                default: return vk::DescriptorType::eInputAttachment;
+            }
+        }
+
+        vk::AccessFlags layoutToAccessFlags(vk::ImageLayout layout)
+        {
+            switch (layout) {
+                case vk::ImageLayout::eUndefined: return {};
+                case vk::ImageLayout::eTransferDstOptimal: return vk::AccessFlagBits::eTransferWrite;
+                case vk::ImageLayout::eTransferSrcOptimal: return vk::AccessFlagBits::eTransferRead;
+                case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::AccessFlagBits::eShaderRead;
+                case vk::ImageLayout::eColorAttachmentOptimal:
+                    return vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+                case vk::ImageLayout::ePresentSrcKHR: return vk::AccessFlagBits::eMemoryRead;
+                case vk::ImageLayout::eGeneral:
+                    return vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+                case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+                    return vk::AccessFlagBits::eDepthStencilAttachmentRead |
+                           vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                case vk::ImageLayout::eDepthAttachmentOptimal:
+                    return vk::AccessFlagBits::eDepthStencilAttachmentRead |
+                           vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                case vk::ImageLayout::eStencilAttachmentOptimal:
+                    return vk::AccessFlagBits::eDepthStencilAttachmentRead |
+                           vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+                default: throw std::runtime_error("[TGA Vulkan] Layout to AccessFlags transition not supported"); ;
+            }
+        }
+
+        // TODO use?
+        vk::PipelineStageFlags layoutToPipelineStageFlags(vk::ImageLayout layout)
+        {
+            switch (layout) {
+                case vk::ImageLayout::eUndefined: return vk::PipelineStageFlagBits::eTopOfPipe;
+                case vk::ImageLayout::eTransferDstOptimal: return vk::PipelineStageFlagBits::eTransfer;
+                case vk::ImageLayout::eTransferSrcOptimal: return vk::PipelineStageFlagBits::eTransfer;
+                case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::PipelineStageFlagBits::eVertexShader;
+                case vk::ImageLayout::eColorAttachmentOptimal: return vk::PipelineStageFlagBits::eFragmentShader;
+                case vk::ImageLayout::ePresentSrcKHR: return vk::PipelineStageFlagBits::eAllGraphics;
+                case vk::ImageLayout::eGeneral: return vk::PipelineStageFlagBits::eAllCommands;
+                case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+                    return vk::PipelineStageFlagBits::eEarlyFragmentTests;
+                case vk::ImageLayout::eDepthAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
+                case vk::ImageLayout::eStencilAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
+                default: throw std::runtime_error("[TGA Vulkan] Layout to PipelineStageFlags transition not supported");
+            }
+        }
+
+        vk::PipelineStageFlags accessToPipelineStageFlags(vk::AccessFlags accessFlags)
+        {
+            if (accessFlags == vk::AccessFlags{}) return vk::PipelineStageFlagBits::eTopOfPipe;
+            vk::PipelineStageFlags pipelineStageFlags{};
+            if ((accessFlags & vk::AccessFlagBits::eIndirectCommandRead) == vk::AccessFlagBits::eIndirectCommandRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eDrawIndirect;
+            if ((accessFlags & vk::AccessFlagBits::eIndexRead) == vk::AccessFlagBits::eIndexRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+            if ((accessFlags & vk::AccessFlagBits::eVertexAttributeRead) == vk::AccessFlagBits::eVertexAttributeRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
+            if ((accessFlags & vk::AccessFlagBits::eUniformRead) == vk::AccessFlagBits::eUniformRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
+            if ((accessFlags & vk::AccessFlagBits::eShaderRead) == vk::AccessFlagBits::eShaderRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
+            if ((accessFlags & vk::AccessFlagBits::eShaderWrite) == vk::AccessFlagBits::eShaderWrite)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
+            if ((accessFlags & vk::AccessFlagBits::eInputAttachmentRead) == vk::AccessFlagBits::eInputAttachmentRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
+            if ((accessFlags & vk::AccessFlagBits::eColorAttachmentRead) == vk::AccessFlagBits::eColorAttachmentRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+            if ((accessFlags & vk::AccessFlagBits::eColorAttachmentWrite) == vk::AccessFlagBits::eColorAttachmentWrite)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+            if ((accessFlags & vk::AccessFlagBits::eDepthStencilAttachmentRead) ==
+                vk::AccessFlagBits::eDepthStencilAttachmentRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
+            if ((accessFlags & vk::AccessFlagBits::eDepthStencilAttachmentWrite) ==
+                vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
+            if ((accessFlags & vk::AccessFlagBits::eTransferRead) == vk::AccessFlagBits::eTransferRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
+            if ((accessFlags & vk::AccessFlagBits::eTransferWrite) == vk::AccessFlagBits::eTransferWrite)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
+            if ((accessFlags & vk::AccessFlagBits::eHostRead) == vk::AccessFlagBits::eHostRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eHost;
+            if ((accessFlags & vk::AccessFlagBits::eHostWrite) == vk::AccessFlagBits::eHostWrite)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eHost;
+            if ((accessFlags & vk::AccessFlagBits::eMemoryRead) == vk::AccessFlagBits::eMemoryRead)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eBottomOfPipe;
+            if ((accessFlags & vk::AccessFlagBits::eMemoryWrite) == vk::AccessFlagBits::eMemoryWrite)
+                pipelineStageFlags |= vk::PipelineStageFlagBits::eAllGraphics;
+            return pipelineStageFlags;
+        }
+
+    }  // namespace
+
+    namespace /*init*/
+    {
+        static const std::array<const char*, 1> vulkanLayers = {"VK_LAYER_KHRONOS_validation"};
+        vk::Instance createInstance(VulkanWSI const& wsi)
+        {
+            auto extensions = wsi.getRequiredExtensions();
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            vk::ApplicationInfo appInfo("TGA", 1, "TGA", 1, VK_API_VERSION_1_2);
+            auto instance = vk::createInstance(vk::InstanceCreateInfo()
+                                                   .setPApplicationInfo(&appInfo)
+                                                   .setPEnabledLayerNames(vulkanLayers)
+                                                   .setPEnabledExtensionNames(extensions)
+
+            );
+            loadVkInstanceExtensions(instance);
+            return instance;
+        }
+
+        vk::DebugUtilsMessengerEXT createDebugMessenger(vk::Instance& instance)
+        {
+            using MsgSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT;
+            using MsgType = vk::DebugUtilsMessageTypeFlagBitsEXT;
+            return instance.createDebugUtilsMessengerEXT(
+                vk::DebugUtilsMessengerCreateInfoEXT()
+                    .setMessageSeverity(MsgSeverity::eWarning | MsgSeverity::eError)
+                    .setMessageType(MsgType::eGeneral | MsgType::ePerformance | MsgType::eValidation)
+                    .setPfnUserCallback(&vulkanDebugCallback));
+        }
+
+        vk::PhysicalDevice choseGPU(vk::Instance& instance)
+        {
+            auto pdevices = instance.enumeratePhysicalDevices();
+            auto gpus = pdevices.front();
+            for (auto& p : pdevices) {
+                auto props = p.getProperties();
+                if (props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) gpus = p;
+            }
+            return gpus;
+        }
+
+        uint32_t findUniversalQueueFamily(vk::PhysicalDevice& gpu)
+        {
+            const auto& queueFamilies = gpu.getQueueFamilyProperties();
+            for (uint32_t i = 0; i < queueFamilies.size(); i++) {
+                auto flags = queueFamilies[i].queueFlags;
+                if ((flags & vk::QueueFlagBits::eGraphics) && (flags & vk::QueueFlagBits::eCompute)) return i;
+            }
+
+            throw std::runtime_error("GPU does not support Queue with graphics and compute");
+        }
+
+        vk::Device createDevice(vk::PhysicalDevice& gpu, uint32_t renderQueueFamily)
+        {
+            vk::PhysicalDeviceFeatures2 features;
+            vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeature;
+            vk::PhysicalDeviceAccelerationStructureFeaturesKHR asFeature;
+            features.pNext = &asFeature;
+            asFeature.pNext = &rayQueryFeature;
+            gpu.getFeatures2(&features);
+
+            auto extensions = [](bool withRayQuerySupport) -> std::vector<const char*> {
+                if (!withRayQuerySupport)
+                    return {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+                else
+                    return {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                            // Ray Query Extension
+                            VK_KHR_RAY_QUERY_EXTENSION_NAME, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                            // Required by VK_KHR_acceleration_structure
+                            VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+                            VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                            // Required for ray queries
+                            VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+                            // Required by VK_KHR_spirv_1_4
+                            VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME};
+            }(rayQueryFeature.rayQuery);
+            if (rayQueryFeature.rayQuery) std::cout << "Vulkan RayQuery extension enabled\n";
+
+            float queuePriority = 1.0f;
+            std::array<vk::DeviceQueueCreateInfo, 1> queueInfos{
+                vk::DeviceQueueCreateInfo({}, renderQueueFamily, 1, &queuePriority)};
+
+            auto device = gpu.createDevice(vk::DeviceCreateInfo()
+                                               .setPNext(&features)
+                                               .setQueueCreateInfos(queueInfos)
+                                               .setPEnabledExtensionNames(extensions)
+                                               .setPEnabledLayerNames(vulkanLayers));
+            loadVkDeviceExtensions(device);
+            return device;
+        }
+
+    }  // namespace
+
     TGAVulkan::TGAVulkan()
-        : wsi(VulkanWSI()), instance(createInstance()), debugger(createDebugger()), pDevice(choseGPU()),
-          queueIndices(findQueueFamilies()), device(createDevice()),
-          graphicsQueue(device.getQueue(queueIndices.graphics, 0)),
-          transferQueue(device.getQueue(queueIndices.transfer, 0)),
-          transferCmdPool(createCommandPool(queueIndices.transfer)),
-          graphicsCmdPool(createCommandPool(queueIndices.graphics, vk::CommandPoolCreateFlagBits::eResetCommandBuffer))
+        : wsi(VulkanWSI()), instance(createInstance(wsi)), debugger(createDebugMessenger(instance)),
+          pDevice(choseGPU(instance)), renderQueueFamiliy(findUniversalQueueFamily(pDevice)),
+          device(createDevice(pDevice, renderQueueFamiliy)), renderQueue(device.getQueue(renderQueueFamiliy, 0)),
+          transferCmdPool(device.createCommandPool({{}, renderQueueFamiliy})),
+          graphicsCmdPool(
+              device.createCommandPool({vk::CommandPoolCreateFlagBits::eResetCommandBuffer, renderQueueFamiliy}))
     {
-        wsi.setVulkanHandles(instance, pDevice, device, graphicsQueue, queueIndices.graphics);
         std::cout << "TGA Vulkan Created\n";
-    }
-
-    vk::Instance TGAVulkan::createInstance()
-    {
-        auto extensions = getInstanceExtentensions();
-        auto layers = getLayers();
-        vk::ApplicationInfo appInfo("TGA", 1, "TGA", 1, VK_API_VERSION_1_1);
-        return vk::createInstance(
-            {{}, &appInfo, uint32_t(layers.size()), layers.data(), uint32_t(extensions.size()), extensions.data()});
-    }
-
-    vk::DebugUtilsMessengerEXT TGAVulkan::createDebugger() { return createDebugMessenger(instance); }
-
-    vk::PhysicalDevice TGAVulkan::choseGPU()
-    {
-        auto pdevices = instance.enumeratePhysicalDevices();
-        auto pdevice = pdevices.front();
-        for (auto &p : pdevices) {
-            auto props = p.getProperties();
-            if (props.deviceType == vk::PhysicalDeviceType::eDiscreteGpu) pdevice = p;
-        }
-        return pdevice;
-    }
-
-    uint32_t TGAVulkan::findQueueFamily(vk::QueueFlags mask, vk::QueueFlags flags)
-    {
-        const auto &queueFamilies = pDevice.getQueueFamilyProperties();
-        for (uint32_t i = 0; i < queueFamilies.size(); i++) {
-            if ((queueFamilies[i].queueFlags & mask) == flags) return i;
-        }
-        return VK_QUEUE_FAMILY_IGNORED;
-    }
-    QueueIndices TGAVulkan::findQueueFamilies()
-    {
-        uint32_t graphicsQueue = findQueueFamily(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute,
-                                                 vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute);
-        uint32_t transferQueue =
-            findQueueFamily(vk::QueueFlagBits::eGraphics | vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eTransfer,
-                            vk::QueueFlagBits::eTransfer);
-        if (transferQueue == VK_QUEUE_FAMILY_IGNORED) transferQueue = graphicsQueue;
-        return {graphicsQueue, transferQueue};
-    }
-    vk::Device TGAVulkan::createDevice()
-    {
-        auto layers = getLayers();
-        auto extensions = getDeviceExtentensions();
-        auto features = getDeviceFeatures();
-        float queuePriority = 1.0f;
-        std::vector<vk::DeviceQueueCreateInfo> queueInfos;
-        std::unordered_set<uint32_t> queueFamiliySet;
-        queueFamiliySet.insert(queueIndices.graphics);
-        queueFamiliySet.insert(queueIndices.transfer);
-        for (auto family : queueFamiliySet) {
-            queueInfos.push_back(vk::DeviceQueueCreateInfo({}, family, 1, &queuePriority));
-        }
-        return pDevice.createDevice({{},
-                                     uint32_t(queueInfos.size()),
-                                     queueInfos.data(),
-                                     uint32_t(layers.size()),
-                                     layers.data(),
-                                     uint32_t(extensions.size()),
-                                     extensions.data(),
-                                     &features});
-    }
-
-    vk::CommandPool TGAVulkan::createCommandPool(uint32_t queueFamily, vk::CommandPoolCreateFlags flags)
-    {
-        return device.createCommandPool({flags, queueFamily});
+        createBottomLevelAccelerationStructure({});
     }
 
     TGAVulkan::~TGAVulkan()
@@ -101,25 +397,25 @@ namespace tga
     }
 
     /*Interface Methodes*/
-    Shader TGAVulkan::createShader(const ShaderInfo &shaderInfo)
+    Shader TGAVulkan::createShader(const ShaderInfo& shaderInfo)
     {
         vk::ShaderModule module =
-            device.createShaderModule({{}, shaderInfo.srcSize, reinterpret_cast<const uint32_t *>(shaderInfo.src)});
+            device.createShaderModule({{}, shaderInfo.srcSize, reinterpret_cast<const uint32_t*>(shaderInfo.src)});
         Shader handle = Shader(TgaShader(VkShaderModule(module)));
-        Shader_TV shader{module, shaderInfo.type};
+        Shader_vkData shader{module, shaderInfo.type};
         shaders.emplace(handle, shader);
         return handle;
     }
-    Buffer TGAVulkan::createBuffer(const BufferInfo &bufferInfo)
+    Buffer TGAVulkan::createBuffer(const BufferInfo& bufferInfo)
     {
         auto usage = determineBufferFlags(bufferInfo.usage);
-        Buffer_TV buffer = allocateBuffer(bufferInfo.dataSize, usage, vk::MemoryPropertyFlagBits::eDeviceLocal);
+        Buffer_vkData buffer = allocateBuffer(bufferInfo.dataSize, usage, vk::MemoryPropertyFlagBits::eDeviceLocal);
         Buffer handle = Buffer(TgaBuffer(VkBuffer(buffer.buffer)));
         buffers.emplace(handle, buffer);
         if (bufferInfo.data != nullptr) fillBuffer(bufferInfo.dataSize, bufferInfo.data, 0, buffer.buffer);
         return handle;
     }
-    Texture TGAVulkan::createTexture(const TextureInfo &textureInfo)
+    Texture TGAVulkan::createTexture(const TextureInfo& textureInfo)
     {
         vk::Format format = determineImageFormat(textureInfo.format);
         auto [extent, layers] = determineImageDimensions(textureInfo);
@@ -139,7 +435,7 @@ namespace tga
         auto [filter, addressMode] = determineSamplerInfo(textureInfo);
         vk::Sampler sampler = device.createSampler(
             {{}, filter, filter, vk::SamplerMipmapMode::eLinear, addressMode, addressMode, addressMode});
-        Texture_TV texture{image, view, memory, sampler, extent, format};
+        Texture_vkData texture{image, view, memory, sampler, extent, format};
         Texture handle = Texture(TgaTexture(VkImage(image)));
         textures.emplace(handle, texture);
         auto transitionCmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
@@ -147,31 +443,31 @@ namespace tga
         if (textureInfo.data != nullptr) {
             transitionImageLayout(transitionCmdBuffer, image, vk::ImageLayout::eUndefined,
                                   vk::ImageLayout::eTransferDstOptimal);
-            endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, graphicsQueue);
+            endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, renderQueue);
             fillTexture(textureInfo.dataSize, textureInfo.data, extent, layers, image);
             transitionCmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
             transitionImageLayout(transitionCmdBuffer, image, vk::ImageLayout::eTransferDstOptimal,
                                   vk::ImageLayout::eGeneral);
-            endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, graphicsQueue);
+            endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, renderQueue);
         } else {
             transitionImageLayout(transitionCmdBuffer, image, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
-            endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, graphicsQueue);
+            endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, renderQueue);
         }
 
         return handle;
     }
-    Window TGAVulkan::createWindow(const WindowInfo &windowInfo)
+    Window TGAVulkan::createWindow(const WindowInfo& windowInfo)
     {
-        auto window = wsi.createWindow(windowInfo);
-        auto &handle = wsi.getWindow(window);
+        auto window = wsi.createWindow(windowInfo, instance, pDevice, device, renderQueueFamiliy);
+        auto& handle = wsi.getWindow(window);
         auto transitionCmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
-        for (auto &image : handle.images)
+        for (auto& image : handle.images)
             transitionImageLayout(transitionCmdBuffer, image, vk::ImageLayout::eUndefined,
                                   vk::ImageLayout::eColorAttachmentOptimal);
-        endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, graphicsQueue);
+        endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, renderQueue);
         return window;
     }
-    InputSet TGAVulkan::createInputSet(const InputSetInfo &inputSetInfo)
+    InputSet TGAVulkan::createInputSet(const InputSetInfo& inputSetInfo)
     {
         if (renderPasses[inputSetInfo.targetRenderPass].setLayouts.size() <= inputSetInfo.setIndex)
             throw std::runtime_error("[TGA Vulkan] InputSet does not match layout from RenderPass");
@@ -179,9 +475,9 @@ namespace tga
         uint32_t uniformCount = 0;
         uint32_t storageCount = 0;
         uint32_t textureCount = 0;
-        for (auto &binding : inputSetInfo.bindings) {
+        for (auto& binding : inputSetInfo.bindings) {
             if (auto handle = std::get_if<Buffer>(&binding.resource)) {
-                const auto &buffer = buffers[*handle];
+                const auto& buffer = buffers[*handle];
                 if (buffer.flags & vk::BufferUsageFlagBits::eUniformBuffer) uniformCount++;
                 if (buffer.flags & vk::BufferUsageFlagBits::eStorageBuffer) storageCount++;
             } else
@@ -200,9 +496,9 @@ namespace tga
 
         auto layout = renderPasses[inputSetInfo.targetRenderPass].setLayouts[inputSetInfo.setIndex];
         vk::DescriptorSet descSet = device.allocateDescriptorSets({descPool, 1, &layout})[0];
-        for (auto &binding : inputSetInfo.bindings) {
+        for (auto& binding : inputSetInfo.bindings) {
             if (auto resource = std::get_if<Buffer>(&binding.resource)) {
-                auto &buffer = buffers[*resource];
+                auto& buffer = buffers[*resource];
                 vk::DescriptorBufferInfo bufferInfo{buffer.buffer, 0, VK_WHOLE_SIZE};
                 vk::WriteDescriptorSet writeSet{
                     descSet,
@@ -215,7 +511,7 @@ namespace tga
                     &bufferInfo};
                 device.updateDescriptorSets({writeSet}, {});
             } else if (auto resource = std::get_if<Texture>(&binding.resource)) {
-                auto &texture = textures[*resource];
+                auto& texture = textures[*resource];
                 vk::DescriptorImageInfo imageInfo{texture.sampler, texture.imageView, vk::ImageLayout::eGeneral};
                 vk::WriteDescriptorSet writeSet{
                     descSet,   binding.slot, binding.arrayElement, 1, vk::DescriptorType::eCombinedImageSampler,
@@ -224,21 +520,21 @@ namespace tga
             }
         }
         InputSet inputSet = InputSet(TgaInputSet(VkDescriptorPool(descPool)));
-        InputSet_TV inputSet_tv{descPool, descSet, inputSetInfo.setIndex};
+        InputSet_vkData inputSet_tv{descPool, descSet, inputSetInfo.setIndex};
         inputSets.emplace(inputSet, inputSet_tv);
         return inputSet;
     }
-    RenderPass TGAVulkan::createRenderPass(const RenderPassInfo &renderPassInfo)
+    RenderPass TGAVulkan::createRenderPass(const RenderPassInfo& renderPassInfo)
     {
         vk::RenderPass renderPass;
         std::vector<vk::Framebuffer> framebuffers;
         vk::Extent2D area{};
         if (auto renderTarget = std::get_if<Texture>(&renderPassInfo.renderTarget)) {
-            auto &renderTex = textures[*renderTarget];
+            auto& renderTex = textures[*renderTarget];
             area = vk::Extent2D(renderTex.extent.width, renderTex.extent.height);
             if (!textureDepthBuffers.count(*renderTarget))
                 textureDepthBuffers.emplace(*renderTarget, createDepthBuffer(area.width, area.height));
-            auto &depthBuffer = textureDepthBuffers[*renderTarget];
+            auto& depthBuffer = textureDepthBuffers[*renderTarget];
             renderPass = makeRenderPass({renderTex.format}, renderPassInfo.clearOperations, vk::ImageLayout::eGeneral);
             std::array<vk::ImageView, 2> attachments{renderTex.imageView, depthBuffer.imageView};
             framebuffers.emplace_back(device.createFramebuffer({{},
@@ -257,7 +553,7 @@ namespace tga
             std::vector<vk::ImageView> attachments;
             attachments.reserve(renderTargets->size() + 1);
             for (auto renderTarget : *renderTargets) {
-                auto &renderTex = textures.at(renderTarget);
+                auto& renderTex = textures.at(renderTarget);
                 renderTexFormats.push_back(renderTex.format);
                 attachments.push_back(renderTex.imageView);
                 if (depthBufferImageView != vk::ImageView{}) continue;
@@ -279,12 +575,12 @@ namespace tga
                                                                 area.height,
                                                                 1}));
         } else if (auto renderTarget = std::get_if<Window>(&renderPassInfo.renderTarget)) {
-            auto &renderWindow = wsi.getWindow(*renderTarget);
+            auto& renderWindow = wsi.getWindow(*renderTarget);
             area = renderWindow.extent;
             if (!windowDepthBuffers.count(*renderTarget))
                 windowDepthBuffers.emplace(*renderTarget,
                                            createDepthBuffer(renderWindow.extent.width, renderWindow.extent.height));
-            auto &depthBuffer = windowDepthBuffers[*renderTarget];
+            auto& depthBuffer = windowDepthBuffers[*renderTarget];
             renderPass = makeRenderPass({renderWindow.format}, renderPassInfo.clearOperations,
                                         vk::ImageLayout::eColorAttachmentOptimal);
             for (uint32_t i = 0; i < renderWindow.imageViews.size(); i++) {
@@ -302,10 +598,48 @@ namespace tga
 
         auto pipelineLayout = device.createPipelineLayout({{}, uint32_t(setLayouts.size()), setLayouts.data()});
         auto [pipeline, bindPoint] = makePipeline(renderPassInfo, pipelineLayout, renderPass);
-        RenderPass_TV renderPass_tv{framebuffers, renderPass, setLayouts, pipelineLayout, pipeline, bindPoint, area};
+        RenderPass_vkData renderPass_tv{framebuffers, renderPass, setLayouts, pipelineLayout,
+                                        pipeline,     bindPoint,  area};
         RenderPass handle = RenderPass(TgaRenderPass(VkRenderPass(renderPass)));
         renderPasses.emplace(handle, renderPass_tv);
         return handle;
+    }
+
+    ext::TopLevelAccelerationStructure TGAVulkan::createTopLevelAccelerationStructure(
+        ext::TopLevelAccelerationStructureInfo const& TLASInfo)
+    {
+        /*
+        1. Get Size info
+        2. Allocate Memory
+        3. Create Host Handle
+        4. Build Structure
+        */
+
+        return {};
+    }
+
+    ext::BottomLevelAccelerationStructure TGAVulkan::createBottomLevelAccelerationStructure(
+        ext::BottomLevelAccelerationStructureInfo const& BLASInfo)
+    {
+        if (0) {
+            int* ptr;
+            int const& ref = *ptr;
+        }
+        /*
+        1. Get Size info
+        2. Allocate Memory
+        3. Create Host Handle
+        4. Build Structure
+        */
+        // auto buildSize =
+        // device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,{});
+
+        // buildSize.accelerationStructureSize
+
+        // vk::AccelerationStructureCreateInfoKHR();
+        // auto test = device.createAccelerationStructureKHR({});
+
+        return {};
     }
 
     void TGAVulkan::beginCommandBuffer()
@@ -323,26 +657,26 @@ namespace tga
         if (!cmdBuffer) {
             return beginCommandBuffer();
         }
-        auto &handle = commandBuffers[cmdBuffer];
+        auto& handle = commandBuffers[cmdBuffer];
         currentRecording.cmdBuffer = handle.cmdBuffer;
         handle.cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
     }
     void TGAVulkan::bindVertexBuffer(Buffer buffer)
     {
-        auto &handle = buffers[buffer];
+        auto& handle = buffers[buffer];
         currentRecording.cmdBuffer.bindVertexBuffers(0, {handle.buffer}, {0});
     }
     void TGAVulkan::bindIndexBuffer(Buffer buffer)
     {
-        auto &handle = buffers[buffer];
+        auto& handle = buffers[buffer];
         currentRecording.cmdBuffer.bindIndexBuffer(handle.buffer, 0, vk::IndexType::eUint32);
     }
 
     void TGAVulkan::bindInputSet(InputSet inputSet)
     {
-        auto &handle = inputSets[inputSet];
+        auto& handle = inputSets[inputSet];
 
-        auto &renderPass = renderPasses[currentRecording.renderPass];
+        auto& renderPass = renderPasses[currentRecording.renderPass];
         currentRecording.cmdBuffer.bindDescriptorSets(renderPass.bindPoint, renderPass.pipelineLayout, handle.index, 1,
                                                       &handle.descriptorSet, 0, nullptr);
     }
@@ -374,8 +708,8 @@ namespace tga
             if (renderPasses[currentRecording.renderPass].bindPoint == vk::PipelineBindPoint::eGraphics)
                 currentRecording.cmdBuffer.endRenderPass();
         }
-        auto &cmd = currentRecording.cmdBuffer;
-        auto &handle = renderPasses[renderPass];
+        auto& cmd = currentRecording.cmdBuffer;
+        auto& handle = renderPasses[renderPass];
         std::array<float, 4> colorClear = {0., 0., 0., 0.};
         std::array<vk::ClearValue, 2> clearValues = {};
         clearValues[0] = vk::ClearColorValue(colorClear);
@@ -406,7 +740,7 @@ namespace tga
             currentRecording.renderPass = RenderPass();
         }
         currentRecording.cmdBuffer.end();
-        CommandBuffer_TV cmdBuffer_tv{currentRecording.cmdBuffer};
+        CommandBuffer_vkData cmdBuffer_tv{currentRecording.cmdBuffer};
         CommandBuffer handle = TgaCommandBuffer(VkCommandBuffer(currentRecording.cmdBuffer));
         commandBuffers.emplace(handle, cmdBuffer_tv);
         currentRecording.cmdBuffer = vk::CommandBuffer();
@@ -414,19 +748,19 @@ namespace tga
     }
     void TGAVulkan::execute(CommandBuffer commandBuffer)
     {
-        auto &handle = commandBuffers[commandBuffer];
-        graphicsQueue.submit({{0, nullptr, nullptr, 1, &handle.cmdBuffer}}, {});
+        auto& handle = commandBuffers[commandBuffer];
+        renderQueue.submit({{0, nullptr, nullptr, 1, &handle.cmdBuffer}}, {});
     }
 
-    void TGAVulkan::updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset)
+    void TGAVulkan::updateBuffer(Buffer buffer, uint8_t const* data, size_t dataSize, uint32_t offset)
     {
-        auto &handle = buffers[buffer];
+        auto& handle = buffers[buffer];
         fillBuffer(dataSize, data, offset, handle.buffer);
     }
 
     std::vector<uint8_t> TGAVulkan::readback(Buffer buffer)
     {
-        auto &handle = buffers[buffer];
+        auto& handle = buffers[buffer];
         std::vector<uint8_t> rbBuffer{};
         rbBuffer.resize(handle.size);
 
@@ -437,7 +771,7 @@ namespace tga
         auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
         vk::BufferCopy region{0, 0, handle.size};
         copyCmdBuffer.copyBuffer(handle.buffer, staging.buffer, {region});
-        endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, transferQueue);
+        endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, renderQueue);
         auto mapping = device.mapMemory(staging.memory, 0, handle.size, {});
         std::memcpy(rbBuffer.data(), mapping, handle.size);
         device.unmapMemory(staging.memory);
@@ -448,7 +782,7 @@ namespace tga
 
     std::vector<uint8_t> TGAVulkan::readback(Texture texture)
     {
-        auto &handle = textures[texture];
+        auto& handle = textures[texture];
         auto mr = device.getImageMemoryRequirements(handle.image);
         std::vector<uint8_t> rbBuffer{};
         rbBuffer.resize(mr.size);
@@ -464,7 +798,7 @@ namespace tga
         copyCmdBuffer.copyImageToBuffer(handle.image, vk::ImageLayout::eTransferSrcOptimal, staging.buffer, {region});
         transitionImageLayout(copyCmdBuffer, handle.image, vk::ImageLayout::eTransferSrcOptimal,
                               vk::ImageLayout::eGeneral);
-        endOneTimeCmdBuffer(copyCmdBuffer, graphicsCmdPool, graphicsQueue);
+        endOneTimeCmdBuffer(copyCmdBuffer, graphicsCmdPool, renderQueue);
         auto mapping = device.mapMemory(staging.memory, 0, mr.size, {});
         std::memcpy(rbBuffer.data(), mapping, mr.size);
         device.unmapMemory(staging.memory);
@@ -478,31 +812,31 @@ namespace tga
         return static_cast<uint32_t>(wsi.getWindow(window).imageViews.size());
     }
 
-    uint32_t TGAVulkan::nextFrame(Window window) { return wsi.aquireNextImage(window); }
+    uint32_t TGAVulkan::nextFrame(Window window) { return wsi.aquireNextImage(window, device); }
 
     void TGAVulkan::pollEvents(Window window) { wsi.pollEvents(window); }
 
     void TGAVulkan::present(Window window)
     {
-        auto &handle = wsi.getWindow(window);
+        auto& handle = wsi.getWindow(window);
         auto current = handle.currentFrameIndex;
         auto cmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
         transitionImageLayout(cmdBuffer, handle.images[current], vk::ImageLayout::eColorAttachmentOptimal,
                               vk::ImageLayout::ePresentSrcKHR);
         cmdBuffer.end();
         vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-        graphicsQueue.submit(
+        renderQueue.submit(
             {{1, &handle.imageAvailableSemaphore, waitStages, 1, &cmdBuffer, 1, &handle.renderFinishedSemaphore}}, {});
-        wsi.presentImage(window);
-        graphicsQueue.waitIdle();
+        wsi.presentImage(window, renderQueue);
+        renderQueue.waitIdle();
         device.freeCommandBuffers(graphicsCmdPool, 1, &cmdBuffer);
         cmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
         transitionImageLayout(cmdBuffer, handle.images[current], vk::ImageLayout::ePresentSrcKHR,
                               vk::ImageLayout::eColorAttachmentOptimal);
-        endOneTimeCmdBuffer(cmdBuffer, graphicsCmdPool, graphicsQueue);
+        endOneTimeCmdBuffer(cmdBuffer, graphicsCmdPool, renderQueue);
     }
 
-    void TGAVulkan::setWindowTitle(Window window, const std::string &title)
+    void TGAVulkan::setWindowTitle(Window window, const std::string& title)
     {
         wsi.setWindowTitle(window, title.c_str());
     }
@@ -518,14 +852,14 @@ namespace tga
     void TGAVulkan::free(Shader shader)
     {
         device.waitIdle();
-        auto &handle = shaders[shader];
+        auto& handle = shaders[shader];
         device.destroy(handle.module);
         shaders.erase(shader);
     }
     void TGAVulkan::free(Buffer buffer)
     {
         device.waitIdle();
-        auto &handle = buffers[buffer];
+        auto& handle = buffers[buffer];
         device.destroy(handle.buffer);
         device.free(handle.memory);
         buffers.erase(buffer);
@@ -533,8 +867,8 @@ namespace tga
     void TGAVulkan::free(Texture texture)
     {
         device.waitIdle();
-        auto &handle = textures[texture];
-        auto &depthHandle = textureDepthBuffers[texture];
+        auto& handle = textures[texture];
+        auto& depthHandle = textureDepthBuffers[texture];
         if (depthHandle.image) {
             device.destroy(depthHandle.imageView);
             device.destroy(depthHandle.image);
@@ -550,29 +884,29 @@ namespace tga
     void TGAVulkan::free(Window window)
     {
         device.waitIdle();
-        auto &depthHandle = windowDepthBuffers[window];
+        auto& depthHandle = windowDepthBuffers[window];
         if (depthHandle.image) {
             device.destroy(depthHandle.imageView);
             device.destroy(depthHandle.image);
             device.free(depthHandle.memory);
             windowDepthBuffers.erase(window);
         }
-        wsi.free(window);
+        wsi.free(window, instance, device);
     }
     void TGAVulkan::free(InputSet inputSet)
     {
         device.waitIdle();
-        auto &handle = inputSets[inputSet];
+        auto& handle = inputSets[inputSet];
         device.destroy(handle.descriptorPool);
         inputSets.erase(inputSet);
     }
     void TGAVulkan::free(RenderPass renderPass)
     {
         device.waitIdle();
-        auto &handle = renderPasses[renderPass];
-        for (auto &fb : handle.framebuffers) device.destroy(fb);
+        auto& handle = renderPasses[renderPass];
+        for (auto& fb : handle.framebuffers) device.destroy(fb);
         device.destroy(handle.renderPass);
-        for (auto &sl : handle.setLayouts) device.destroy(sl);
+        for (auto& sl : handle.setLayouts) device.destroy(sl);
         device.destroy(handle.pipeline);
         device.destroy(handle.pipelineLayout);
         renderPasses.erase(renderPass);
@@ -580,35 +914,9 @@ namespace tga
     void TGAVulkan::free(CommandBuffer commandBuffer)
     {
         device.waitIdle();
-        auto &handle = commandBuffers[commandBuffer];
+        auto& handle = commandBuffers[commandBuffer];
         device.freeCommandBuffers(graphicsCmdPool, {handle.cmdBuffer});
         commandBuffers.erase(commandBuffer);
-    }
-
-    /*Quality of life functions*/
-
-    const std::vector<const char *> TGAVulkan::getInstanceExtentensions()
-    {
-        auto extensions = wsi.getRequiredExtensions();
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        return extensions;
-    }
-    const std::vector<const char *> TGAVulkan::getDeviceExtentensions()
-    {
-        std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-        return deviceExtensions;
-    }
-    const std::vector<const char *> TGAVulkan::getLayers()
-    {
-        const std::vector<const char *> layers = {"VK_LAYER_KHRONOS_validation"};
-        return layers;
-    }
-    vk::PhysicalDeviceFeatures TGAVulkan::getDeviceFeatures()
-    {
-        vk::PhysicalDeviceFeatures features;
-        features.fillModeNonSolid = VK_TRUE;
-        features.multiDrawIndirect = VK_TRUE;
-        return features;
     }
 
     uint32_t TGAVulkan::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties)
@@ -620,13 +928,13 @@ namespace tga
         throw std::runtime_error("[TGA Vulkan] Memory Type could not be found");
     }
 
-    Buffer_TV TGAVulkan::allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-                                        vk::MemoryPropertyFlags properties)
+    Buffer_vkData TGAVulkan::allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
+                                            vk::MemoryPropertyFlags properties)
     {
-        vk::SharingMode sharingMode =
-            queueIndices.graphics == queueIndices.transfer ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
-        std::array<uint32_t, 2> queues{queueIndices.graphics, queueIndices.transfer};
-        uint32_t queueCount = queueIndices.graphics == queueIndices.transfer ? 1 : 2;
+        // TODO fix up
+        vk::SharingMode sharingMode = vk::SharingMode::eExclusive;
+        std::array<uint32_t, 2> queues{renderQueueFamiliy, renderQueueFamiliy};
+        uint32_t queueCount = 1;
         vk::Buffer buffer = device.createBuffer({{}, size, usage, sharingMode, queueCount, queues.data()});
         auto mr = device.getBufferMemoryRequirements(buffer);
         vk::DeviceMemory memory = device.allocateMemory({mr.size, findMemoryType(mr.memoryTypeBits, properties)});
@@ -635,7 +943,7 @@ namespace tga
     }
 
     std::tuple<vk::ImageType, vk::ImageViewType, vk::ImageCreateFlags> TGAVulkan::determineImageTypeInfo(
-        const TextureInfo &textureInfo)
+        const TextureInfo& textureInfo)
     {
         switch (textureInfo.textureType) {
             case TextureType::_2D: return {vk::ImageType::e2D, vk::ImageViewType::e2D, {}};
@@ -647,7 +955,7 @@ namespace tga
         }
     }
 
-    std::tuple<vk::Extent3D, uint32_t> TGAVulkan::determineImageDimensions(const TextureInfo &textureInfo)
+    std::tuple<vk::Extent3D, uint32_t> TGAVulkan::determineImageDimensions(const TextureInfo& textureInfo)
     {
         uint32_t depth = 1;
         uint32_t layers = 1;
@@ -659,7 +967,7 @@ namespace tga
         return {{textureInfo.width, textureInfo.height, depth}, layers};
     }
 
-    std::pair<vk::ImageTiling, vk::ImageUsageFlags> TGAVulkan::determineImageFeatures(vk::Format &format)
+    std::pair<vk::ImageTiling, vk::ImageUsageFlags> TGAVulkan::determineImageFeatures(vk::Format& format)
     {
         auto tiling = vk::ImageTiling::eOptimal;
         auto usageFlags = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst |
@@ -693,7 +1001,7 @@ namespace tga
         throw std::runtime_error("[TGA Vulkan] Required Depth Format not present on this system");
     }
 
-    DepthBuffer_TV TGAVulkan::createDepthBuffer(uint32_t width, uint32_t height)
+    DepthBuffer_vkData TGAVulkan::createDepthBuffer(uint32_t width, uint32_t height)
     {
         static vk::Format depthFormat = findDepthFormat();
         vk::Image image = device.createImage({{},
@@ -715,11 +1023,11 @@ namespace tga
         auto transitionCmdBuffer = beginOneTimeCmdBuffer(graphicsCmdPool);
         transitionImageLayout(transitionCmdBuffer, image, vk::ImageLayout::eUndefined,
                               vk::ImageLayout::eDepthStencilAttachmentOptimal);
-        endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, graphicsQueue);
+        endOneTimeCmdBuffer(transitionCmdBuffer, graphicsCmdPool, renderQueue);
         return {image, view, memory};
     }
 
-    vk::RenderPass TGAVulkan::makeRenderPass(std::vector<vk::Format> const &colorFormats, ClearOperation clearOps,
+    vk::RenderPass TGAVulkan::makeRenderPass(std::vector<vk::Format> const& colorFormats, ClearOperation clearOps,
                                              vk::ImageLayout layout)
     {
         auto colorLoadOp = vk::AttachmentLoadOp::eLoad;
@@ -778,10 +1086,10 @@ namespace tga
             {{}, uint32_t(attachments.size()), attachments.data(), 1, &subpass, 1, &subDependency});
     }
 
-    std::vector<vk::DescriptorSetLayout> TGAVulkan::decodeInputLayout(const InputLayout &inputLayout)
+    std::vector<vk::DescriptorSetLayout> TGAVulkan::decodeInputLayout(const InputLayout& inputLayout)
     {
         std::vector<vk::DescriptorSetLayout> descSetLayouts{};
-        for (const auto &setLayout : inputLayout.setLayouts) {
+        for (const auto& setLayout : inputLayout.setLayouts) {
             std::vector<vk::DescriptorSetLayoutBinding> bindings{};
             for (uint32_t i = 0; i < setLayout.bindingLayouts.size(); i++) {
                 bindings.emplace_back(
@@ -794,12 +1102,12 @@ namespace tga
         return descSetLayouts;
     }
 
-    vk::Pipeline TGAVulkan::makeGraphicsPipeline(const RenderPassInfo &renderPassInfo,
+    vk::Pipeline TGAVulkan::makeGraphicsPipeline(const RenderPassInfo& renderPassInfo,
                                                  vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass)
     {
         std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{};
-        for (auto &stage : renderPassInfo.shaderStages) {
-            auto &shader = shaders[stage];
+        for (auto& stage : renderPassInfo.shaderStages) {
+            auto& shader = shaders[stage];
             shaderStages.emplace_back(
                 vk::PipelineShaderStageCreateInfo({}, determineShaderStage(shader.type), shader.module, "main"));
         }
@@ -855,7 +1163,7 @@ namespace tga
                                          renderPass})
             .value;
     }
-    std::pair<vk::Pipeline, vk::PipelineBindPoint> TGAVulkan::makePipeline(const RenderPassInfo &renderPassInfo,
+    std::pair<vk::Pipeline, vk::PipelineBindPoint> TGAVulkan::makePipeline(const RenderPassInfo& renderPassInfo,
                                                                            vk::PipelineLayout pipelineLayout,
                                                                            vk::RenderPass renderPass)
     {
@@ -863,7 +1171,7 @@ namespace tga
         bool vertexPresent{false};
         bool fragmentPresent{false};
         for (auto stage : renderPassInfo.shaderStages) {
-            const auto &shader = shaders[stage];
+            const auto& shader = shaders[stage];
             if (shader.type == ShaderType::compute) {
                 if (renderPassInfo.shaderStages.size() == 1) {
                     return {
@@ -892,13 +1200,13 @@ namespace tga
         return {makeGraphicsPipeline(renderPassInfo, pipelineLayout, renderPass), vk::PipelineBindPoint::eGraphics};
     }
 
-    vk::CommandBuffer TGAVulkan::beginOneTimeCmdBuffer(vk::CommandPool &cmdPool)
+    vk::CommandBuffer TGAVulkan::beginOneTimeCmdBuffer(vk::CommandPool& cmdPool)
     {
         vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers({cmdPool, vk::CommandBufferLevel::ePrimary, 1})[0];
         cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
         return cmdBuffer;
     }
-    void TGAVulkan::endOneTimeCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::CommandPool &cmdPool, vk::Queue &submitQueue)
+    void TGAVulkan::endOneTimeCmdBuffer(vk::CommandBuffer& cmdBuffer, vk::CommandPool& cmdPool, vk::Queue& submitQueue)
     {
         cmdBuffer.end();
         submitQueue.submit({{0, nullptr, nullptr, 1, &cmdBuffer}}, {});
@@ -906,13 +1214,13 @@ namespace tga
         device.freeCommandBuffers(cmdPool, 1, &cmdBuffer);
     }
 
-    void TGAVulkan::fillBuffer(size_t size, const uint8_t *data, uint32_t offset, vk::Buffer target)
+    void TGAVulkan::fillBuffer(size_t size, const uint8_t* data, uint32_t offset, vk::Buffer target)
     {
         auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
         if (size <= 65536 && (size % 4) == 0)  // Quick Path
         {
             copyCmdBuffer.updateBuffer(target, offset, size, data);
-            endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, transferQueue);
+            endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, renderQueue);
         } else  // Staging Buffer
         {
             auto buffer =
@@ -923,7 +1231,7 @@ namespace tga
             device.unmapMemory(buffer.memory);
             vk::BufferCopy region{0, offset, size};
             copyCmdBuffer.copyBuffer(buffer.buffer, target, {region});
-            endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, transferQueue);
+            endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, renderQueue);
             device.destroy(buffer.buffer);
             device.free(buffer.memory);
         }
@@ -952,13 +1260,13 @@ namespace tga
                                     accessFlagsNew,
                                     oldLayout,
                                     newLayout,
-                                    queueIndices.graphics,
-                                    queueIndices.graphics,
+                                    renderQueueFamiliy,
+                                    renderQueueFamiliy,
                                     image,
                                     {imageAspects, 0, 1, 0, VK_REMAINING_ARRAY_LAYERS}}});
     }
 
-    void TGAVulkan::fillTexture(size_t size, const uint8_t *data, vk::Extent3D extent, uint32_t layers,
+    void TGAVulkan::fillTexture(size_t size, const uint8_t* data, vk::Extent3D extent, uint32_t layers,
                                 vk::Image target)
     {
         auto buffer =
@@ -970,257 +1278,9 @@ namespace tga
         auto uploadCmd = beginOneTimeCmdBuffer(graphicsCmdPool);
         vk::BufferImageCopy region{0, 0, 0, {vk::ImageAspectFlagBits::eColor, 0, 0, layers}, {0, 0, 0}, extent};
         uploadCmd.copyBufferToImage(buffer.buffer, target, vk::ImageLayout::eTransferDstOptimal, {region});
-        endOneTimeCmdBuffer(uploadCmd, graphicsCmdPool, graphicsQueue);
+        endOneTimeCmdBuffer(uploadCmd, graphicsCmdPool, renderQueue);
         device.destroy(buffer.buffer);
         device.free(buffer.memory);
     }
 
-    vk::BufferUsageFlags TGAVulkan::determineBufferFlags(tga::BufferUsage usage)
-    {
-        if (usage == BufferUsage::undefined) throw std::runtime_error("[TGA Vulkan] Buffer usage is undefined!");
-        vk::BufferUsageFlags usageFlags = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc;
-        if (usage & tga::BufferUsage::uniform) {
-            usageFlags |= vk::BufferUsageFlagBits::eUniformBuffer;
-        }
-        if (usage & tga::BufferUsage::vertex) {
-            usageFlags |= vk::BufferUsageFlagBits::eVertexBuffer;
-        }
-        if (usage & tga::BufferUsage::index) {
-            usageFlags |= vk::BufferUsageFlagBits::eIndexBuffer;
-        }
-        if (usage & tga::BufferUsage::storage) {
-            usageFlags |= vk::BufferUsageFlagBits::eStorageBuffer;
-        }
-        if (usage & tga::BufferUsage::indirect) {
-            usageFlags |= vk::BufferUsageFlagBits::eIndirectBuffer;
-        }
-        return usageFlags;
-    }
-
-    vk::Format TGAVulkan::determineImageFormat(tga::Format format)
-    {
-        switch (format) {
-            case Format::r8_uint: return vk::Format::eR8Uint;
-            case Format::r8_sint: return vk::Format::eR8Sint;
-            case Format::r8_srgb: return vk::Format::eR8Srgb;
-            case Format::r8_unorm: return vk::Format::eR8Unorm;
-            case Format::r8_snorm: return vk::Format::eR8G8Snorm;
-            case Format::r8g8_uint: return vk::Format::eR8G8Uint;
-            case Format::r8g8_sint: return vk::Format::eR8G8Sint;
-            case Format::r8g8_srgb: return vk::Format::eR8G8Srgb;
-            case Format::r8g8_unorm: return vk::Format::eR8G8Unorm;
-            case Format::r8g8_snorm: return vk::Format::eR8G8Snorm;
-            case Format::r8g8b8_uint: return vk::Format::eR8G8B8Uint;
-            case Format::r8g8b8_sint: return vk::Format::eR8G8B8Sint;
-            case Format::r8g8b8_srgb: return vk::Format::eR8G8B8Srgb;
-            case Format::r8g8b8_unorm: return vk::Format::eR8G8B8Unorm;
-            case Format::r8g8b8_snorm: return vk::Format::eR8G8B8Snorm;
-            case Format::r8g8b8a8_uint: return vk::Format::eR8G8B8A8Uint;
-            case Format::r8g8b8a8_sint: return vk::Format::eR8G8B8A8Sint;
-            case Format::r8g8b8a8_srgb: return vk::Format::eR8G8B8A8Srgb;
-            case Format::r8g8b8a8_unorm: return vk::Format::eR8G8B8A8Unorm;
-            case Format::r8g8b8a8_snorm: return vk::Format::eR8G8B8A8Snorm;
-            case Format::r32_uint: return vk::Format::eR32Uint;
-            case Format::r32_sint: return vk::Format::eR32Sint;
-            case Format::r32_sfloat: return vk::Format::eR32Sfloat;
-            case Format::r32g32_uint: return vk::Format::eR32G32Uint;
-            case Format::r32g32_sint: return vk::Format::eR32G32Sint;
-            case Format::r32g32_sfloat: return vk::Format::eR32G32Sfloat;
-            case Format::r32g32b32_uint: return vk::Format::eR32G32B32Uint;
-            case Format::r32g32b32_sint: return vk::Format::eR32G32B32Sint;
-            case Format::r32g32b32_sfloat: return vk::Format::eR32G32B32Sfloat;
-            case Format::r32g32b32a32_uint: return vk::Format::eR32G32B32A32Uint;
-            case Format::r32g32b32a32_sint: return vk::Format::eR32G32B32A32Sint;
-            case Format::r32g32b32a32_sfloat: return vk::Format::eR32G32B32A32Sfloat;
-            case Format::r16_sfloat: return vk::Format::eR16Sfloat;
-            case Format::r16g16_sfloat: return vk::Format::eR16G16Sfloat;
-            case Format::r16g16b16_sfloat: return vk::Format::eR16G16B16Sfloat;
-            case Format::r16g16b16a16_sfloat: return vk::Format::eR16G16B16A16Sfloat;
-            default: return vk::Format::eUndefined;
-        }
-    }
-
-    std::tuple<vk::Filter, vk::SamplerAddressMode> TGAVulkan::determineSamplerInfo(const TextureInfo &textureInfo)
-    {
-        auto filter = vk::Filter::eNearest;
-        if (textureInfo.samplerMode == SamplerMode::linear) filter = vk::Filter::eLinear;
-        vk::SamplerAddressMode addressMode{vk::SamplerAddressMode::eClampToBorder};
-        switch (textureInfo.addressMode) {
-            case AddressMode::clampEdge: addressMode = vk::SamplerAddressMode::eClampToEdge; break;
-            case AddressMode::clampBorder: addressMode = vk::SamplerAddressMode::eClampToBorder; break;
-            case AddressMode::repeat: addressMode = vk::SamplerAddressMode::eRepeat; break;
-            case AddressMode::repeatMirror: addressMode = vk::SamplerAddressMode::eMirroredRepeat; break;
-        }
-        return {filter, addressMode};
-    }
-
-    vk::ShaderStageFlagBits TGAVulkan::determineShaderStage(tga::ShaderType shaderType)
-    {
-        switch (shaderType) {
-            case ShaderType::vertex: return vk::ShaderStageFlagBits::eVertex;
-            case ShaderType::fragment: return vk::ShaderStageFlagBits::eFragment;
-            case ShaderType::compute: return vk::ShaderStageFlagBits::eCompute;
-            default: return vk::ShaderStageFlagBits::eAllGraphics;
-        }
-    }
-
-    std::vector<vk::VertexInputAttributeDescription> TGAVulkan::determineVertexAttributes(
-        const std::vector<VertexAttribute> &attributes)
-    {
-        std::vector<vk::VertexInputAttributeDescription> descriptions{};
-        for (uint32_t i = 0; i < attributes.size(); i++) {
-            descriptions.emplace_back(vk::VertexInputAttributeDescription(
-                i, 0, determineImageFormat(attributes[i].format), static_cast<uint32_t>(attributes[i].offset)));
-        }
-        return descriptions;
-    }
-    vk::PipelineRasterizationStateCreateInfo TGAVulkan::determineRasterizerState(const RasterizerConfig &config)
-    {
-        vk::CullModeFlags cullFlags = vk::CullModeFlagBits::eNone;
-        vk::PolygonMode polyMode = vk::PolygonMode::eFill;
-        vk::FrontFace frontFace = vk::FrontFace::eClockwise;
-        if (config.cullMode == CullMode::back) cullFlags = vk::CullModeFlagBits::eBack;
-        if (config.cullMode == CullMode::front) cullFlags = vk::CullModeFlagBits::eFront;
-        if (config.cullMode == CullMode::all) cullFlags = vk::CullModeFlagBits::eFrontAndBack;
-        if (config.polygonMode == PolygonMode::wireframe) polyMode = vk::PolygonMode::eLine;
-        if (config.frontFace == FrontFace::counterclockwise) frontFace = vk::FrontFace::eCounterClockwise;
-        return {{}, VK_FALSE, VK_FALSE, polyMode, cullFlags, frontFace, VK_FALSE, 0, 0, 0, 1.};
-    }
-
-    vk::CompareOp TGAVulkan::determineDepthCompareOp(CompareOperation compareOperation)
-    {
-        switch (compareOperation) {
-            case CompareOperation::ignore: return vk::CompareOp::eNever;
-            case CompareOperation::equal: return vk::CompareOp::eEqual;
-            case CompareOperation::greater: return vk::CompareOp::eGreater;
-            case CompareOperation::greaterEqual: return vk::CompareOp::eGreaterOrEqual;
-            case CompareOperation::less: return vk::CompareOp::eLess;
-            case CompareOperation::lessEqual: return vk::CompareOp::eLessOrEqual;
-            default: return vk::CompareOp::eAlways;
-        }
-    }
-
-    vk::BlendFactor TGAVulkan::determineBlendFactor(BlendFactor blendFactor)
-    {
-        switch (blendFactor) {
-            case BlendFactor::zero: return vk::BlendFactor::eZero;
-            case BlendFactor::one: return vk::BlendFactor::eOne;
-            case BlendFactor::srcAlpha: return vk::BlendFactor::eSrcAlpha;
-            case BlendFactor::dstAlpha: return vk::BlendFactor::eDstAlpha;
-            case BlendFactor::oneMinusSrcAlpha: return vk::BlendFactor::eOneMinusSrcAlpha;
-            case BlendFactor::oneMinusDstAlpha: return vk::BlendFactor::eOneMinusDstAlpha;
-            default: return vk::BlendFactor::eConstantColor;
-        }
-    }
-
-    vk::PipelineColorBlendAttachmentState TGAVulkan::determineColorBlending(const PerPixelOperations &config)
-    {
-        vk::Bool32 enabled = config.blendEnabled ? VK_TRUE : VK_FALSE;
-        vk::BlendFactor srcBlendFac = determineBlendFactor(config.srcBlend);
-        vk::BlendFactor dstBlendFac = determineBlendFactor(config.dstBlend);
-        vk::BlendFactor srcAlphaBlendFac = determineBlendFactor(config.srcAlphaBlend);
-        vk::BlendFactor dstAlphaBlendFac = determineBlendFactor(config.dstAlphaBlend);
-        return {enabled,
-                srcBlendFac,
-                dstBlendFac,
-                vk::BlendOp::eAdd,
-                srcAlphaBlendFac,
-                dstAlphaBlendFac,
-                vk::BlendOp::eAdd,
-                vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-                    vk::ColorComponentFlagBits::eA};
-    }
-
-    vk::DescriptorType TGAVulkan::determineDescriptorType(tga::BindingType bindingType)
-    {
-        switch (bindingType) {
-            case BindingType::uniformBuffer: return vk::DescriptorType::eUniformBuffer;
-            case BindingType::sampler: return vk::DescriptorType::eCombinedImageSampler;
-            case BindingType::storageBuffer: return vk::DescriptorType::eStorageBuffer;
-            default: return vk::DescriptorType::eInputAttachment;
-        }
-    }
-
-    vk::AccessFlags TGAVulkan::layoutToAccessFlags(vk::ImageLayout layout)
-    {
-        switch (layout) {
-            case vk::ImageLayout::eUndefined: return {};
-            case vk::ImageLayout::eTransferDstOptimal: return vk::AccessFlagBits::eTransferWrite;
-            case vk::ImageLayout::eTransferSrcOptimal: return vk::AccessFlagBits::eTransferRead;
-            case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::AccessFlagBits::eShaderRead;
-            case vk::ImageLayout::eColorAttachmentOptimal:
-                return vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
-            case vk::ImageLayout::ePresentSrcKHR: return vk::AccessFlagBits::eMemoryRead;
-            case vk::ImageLayout::eGeneral: return vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
-            case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-                return vk::AccessFlagBits::eDepthStencilAttachmentRead |
-                       vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-            case vk::ImageLayout::eDepthAttachmentOptimal:
-                return vk::AccessFlagBits::eDepthStencilAttachmentRead |
-                       vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-            case vk::ImageLayout::eStencilAttachmentOptimal:
-                return vk::AccessFlagBits::eDepthStencilAttachmentRead |
-                       vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-            default: throw std::runtime_error("[TGA Vulkan] Layout to AccessFlags transition not supported"); ;
-        }
-    }
-    vk::PipelineStageFlags TGAVulkan::layoutToPipelineStageFlags(vk::ImageLayout layout)
-    {
-        switch (layout) {
-            case vk::ImageLayout::eUndefined: return vk::PipelineStageFlagBits::eTopOfPipe;
-            case vk::ImageLayout::eTransferDstOptimal: return vk::PipelineStageFlagBits::eTransfer;
-            case vk::ImageLayout::eTransferSrcOptimal: return vk::PipelineStageFlagBits::eTransfer;
-            case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::PipelineStageFlagBits::eVertexShader;
-            case vk::ImageLayout::eColorAttachmentOptimal: return vk::PipelineStageFlagBits::eFragmentShader;
-            case vk::ImageLayout::ePresentSrcKHR: return vk::PipelineStageFlagBits::eAllGraphics;
-            case vk::ImageLayout::eGeneral: return vk::PipelineStageFlagBits::eAllCommands;
-            case vk::ImageLayout::eDepthStencilAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
-            case vk::ImageLayout::eDepthAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
-            case vk::ImageLayout::eStencilAttachmentOptimal: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
-            default: throw std::runtime_error("[TGA Vulkan] Layout to PipelineStageFlags transition not supported");
-        }
-    }
-
-    vk::PipelineStageFlags TGAVulkan::accessToPipelineStageFlags(vk::AccessFlags accessFlags)
-    {
-        if (accessFlags == vk::AccessFlags{}) return vk::PipelineStageFlagBits::eTopOfPipe;
-        vk::PipelineStageFlags pipelineStageFlags{};
-        if ((accessFlags & vk::AccessFlagBits::eIndirectCommandRead) == vk::AccessFlagBits::eIndirectCommandRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eDrawIndirect;
-        if ((accessFlags & vk::AccessFlagBits::eIndexRead) == vk::AccessFlagBits::eIndexRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
-        if ((accessFlags & vk::AccessFlagBits::eVertexAttributeRead) == vk::AccessFlagBits::eVertexAttributeRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
-        if ((accessFlags & vk::AccessFlagBits::eUniformRead) == vk::AccessFlagBits::eUniformRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
-        if ((accessFlags & vk::AccessFlagBits::eShaderRead) == vk::AccessFlagBits::eShaderRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
-        if ((accessFlags & vk::AccessFlagBits::eShaderWrite) == vk::AccessFlagBits::eShaderWrite)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
-        if ((accessFlags & vk::AccessFlagBits::eInputAttachmentRead) == vk::AccessFlagBits::eInputAttachmentRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
-        if ((accessFlags & vk::AccessFlagBits::eColorAttachmentRead) == vk::AccessFlagBits::eColorAttachmentRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        if ((accessFlags & vk::AccessFlagBits::eColorAttachmentWrite) == vk::AccessFlagBits::eColorAttachmentWrite)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
-        if ((accessFlags & vk::AccessFlagBits::eDepthStencilAttachmentRead) ==
-            vk::AccessFlagBits::eDepthStencilAttachmentRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
-        if ((accessFlags & vk::AccessFlagBits::eDepthStencilAttachmentWrite) ==
-            vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
-        if ((accessFlags & vk::AccessFlagBits::eTransferRead) == vk::AccessFlagBits::eTransferRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
-        if ((accessFlags & vk::AccessFlagBits::eTransferWrite) == vk::AccessFlagBits::eTransferWrite)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
-        if ((accessFlags & vk::AccessFlagBits::eHostRead) == vk::AccessFlagBits::eHostRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eHost;
-        if ((accessFlags & vk::AccessFlagBits::eHostWrite) == vk::AccessFlagBits::eHostWrite)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eHost;
-        if ((accessFlags & vk::AccessFlagBits::eMemoryRead) == vk::AccessFlagBits::eMemoryRead)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eBottomOfPipe;
-        if ((accessFlags & vk::AccessFlagBits::eMemoryWrite) == vk::AccessFlagBits::eMemoryWrite)
-            pipelineStageFlags |= vk::PipelineStageFlagBits::eAllGraphics;
-        return pipelineStageFlags;
-    }
 }  // namespace tga
