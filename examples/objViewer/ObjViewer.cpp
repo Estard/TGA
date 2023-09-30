@@ -108,8 +108,8 @@ class ObjViewer: public Framework
     private:
     void OnCreate()
     {
-        tgai->beginCommandBuffer();
-        cmdBuffer = tgai->endCommandBuffer();
+        tgai.beginCommandBuffer();
+        cmdBuffer = tgai.endCommandBuffer();
         LoadObj();
         LoadData();
         CreateRenderPass();
@@ -119,20 +119,20 @@ class ObjViewer: public Framework
     void OnUpdate(uint32_t frame)
     {
         UpdateCam();
-        tgai->beginCommandBuffer(cmdBuffer);
+        tgai.beginCommandBuffer(cmdBuffer);
         
-        tgai->bindVertexBuffer(vertexBuffer);
-        tgai->bindIndexBuffer(indexBuffer);
+        tgai.bindVertexBuffer(vertexBuffer);
+        tgai.bindIndexBuffer(indexBuffer);
 
-        tgai->setRenderPass(renderPass,frame);
-        tgai->bindInputSet(camInputSet);
+        tgai.setRenderPass(renderPass,frame);
+        tgai.bindInputSet(camInputSet);
         if(diffuseMapInputSet)
-            tgai->bindInputSet(diffuseMapInputSet);
+            tgai.bindInputSet(diffuseMapInputSet);
         if(normalMapInputSet)
-            tgai->bindInputSet(normalMapInputSet);
-        tgai->drawIndexed(modelVertexCount,0,0);
-        cmdBuffer = tgai->endCommandBuffer();
-        tgai->execute(cmdBuffer);
+            tgai.bindInputSet(normalMapInputSet);
+        tgai.drawIndexed(modelVertexCount,0,0);
+        cmdBuffer = tgai.endCommandBuffer();
+        tgai.execute(cmdBuffer);
     }
 
     void LoadObj()
@@ -219,8 +219,8 @@ class ObjViewer: public Framework
         uint32_t vBufferSize = vBuffer.size()*sizeof(Vertex);
         uint32_t iBufferSize = iBuffer.size()*sizeof(uint32_t);
 
-        vertexBuffer = tgai->createBuffer({tga::BufferUsage::vertex,(uint8_t*)vBuffer.data(),vBufferSize});
-        indexBuffer = tgai->createBuffer({tga::BufferUsage::index,(uint8_t*)iBuffer.data(),iBufferSize});
+        vertexBuffer = tgai.createBuffer({tga::BufferUsage::vertex,(uint8_t*)vBuffer.data(),vBufferSize});
+        indexBuffer = tgai.createBuffer({tga::BufferUsage::index,(uint8_t*)iBuffer.data(),iBufferSize});
     }
 
     void LoadData()
@@ -230,7 +230,7 @@ class ObjViewer: public Framework
                 int width, height,channels;
             stbi_uc* pixels  = stbi_load(filepath.c_str(),&width,&height,&channels,STBI_rgb_alpha);
             if(pixels){
-                tex = tgai->createTexture({
+                tex = tgai.createTexture({
                     static_cast<uint32_t>(width),
                     static_cast<uint32_t>(height),
                     format,
@@ -241,8 +241,8 @@ class ObjViewer: public Framework
         }};
         loadTex(diffuseMap,diffuseMapPath, tga::Format::r8g8b8a8_srgb);
         loadTex(normalMap,normalMapPath, tga::Format::r8g8b8a8_unorm);
-        camData = tgai->createBuffer({tga::BufferUsage::uniform, (uint8_t*)&cam, sizeof(cam)});
-        modelData = tgai->createBuffer({tga::BufferUsage::uniform, (uint8_t*)&modelTransform,sizeof(modelTransform)});
+        camData = tgai.createBuffer({tga::BufferUsage::uniform, (uint8_t*)&cam, sizeof(cam)});
+        modelData = tgai.createBuffer({tga::BufferUsage::uniform, (uint8_t*)&modelTransform,sizeof(modelTransform)});
     }
 
     void CreateRenderPass()
@@ -256,7 +256,7 @@ class ObjViewer: public Framework
             file.seekg(0);
             file.read(shaderData.data(), fileSize);
             file.close();
-            return tgai->createShader({type,(uint8_t*)shaderData.data(),shaderData.size()});
+            return tgai.createShader({type,(uint8_t*)shaderData.data(),shaderData.size()});
         };
 
         tga::InputLayout inputLayout({
@@ -275,15 +275,15 @@ class ObjViewer: public Framework
             fs = LoadShader("shaders/objDNFrag.spv",tga::ShaderType::fragment);
         }
         else if(diffuseMap){
-            vs = tgai->createShader({tga::ShaderType::vertex,objVertSPV.data(),objVertSPV.size()});
+            vs = tgai.createShader({tga::ShaderType::vertex,objVertSPV.data(),objVertSPV.size()});
             fs = LoadShader("shaders/objDFrag.spv",tga::ShaderType::fragment);
 
         }else{
-            vs = tgai->createShader({tga::ShaderType::vertex,objVertSPV.data(),objVertSPV.size()});//LoadShader("shaders/objVert.spv",tga::ShaderType::vertex);
+            vs = tgai.createShader({tga::ShaderType::vertex,objVertSPV.data(),objVertSPV.size()});//LoadShader("shaders/objVert.spv",tga::ShaderType::vertex);
             fs = LoadShader("shaders/objFrag.spv",tga::ShaderType::fragment);
         }  
 
-        renderPass = tgai->createRenderPass({
+        renderPass = tgai.createRenderPass({
                 {vs,fs},_frameworkWindow,tga::ClearOperation::all,
                 {tga::FrontFace::counterclockwise, tga::CullMode::back},
                 {tga::CompareOperation::less},
@@ -301,11 +301,11 @@ class ObjViewer: public Framework
 
     void CreateInputSets()
     {
-        camInputSet = tgai->createInputSet({renderPass,0,{{camData,0},{modelData,1}}});
+        camInputSet = tgai.createInputSet({renderPass,0,{{camData,0},{modelData,1}}});
         if(diffuseMap)
-            diffuseMapInputSet = tgai->createInputSet({renderPass,1,{{diffuseMap,0}}});
+            diffuseMapInputSet = tgai.createInputSet({renderPass,1,{{diffuseMap,0}}});
         if(normalMap)
-            normalMapInputSet = tgai->createInputSet({renderPass,2,{{normalMap,0}}});
+            normalMapInputSet = tgai.createInputSet({renderPass,2,{{normalMap,0}}});
     }
 
 
@@ -323,7 +323,7 @@ class ObjViewer: public Framework
         //cam.projection[1][1] *= -1;
         cam.view = glm::lookAt(position,glm::vec3(0,0,0),up);
         cam.lightPos = glm::vec3(2*circleRadius);
-        tgai->updateBuffer(camData,(uint8_t*)&cam,sizeof(cam),0);
+        tgai.updateBuffer(camData,(uint8_t*)&cam,sizeof(cam),0);
     }
 
     std::string objFilepath;

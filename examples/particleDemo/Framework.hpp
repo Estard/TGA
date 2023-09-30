@@ -8,7 +8,7 @@ class Framework
 {
     public:
     Framework():deltaTime(0.016),tgai(std::make_shared<tga::TGAVulkan>()){}
-    Framework(std::shared_ptr<tga::Interface> _tgai):deltaTime(0.016),tgai(_tgai){}
+    Framework(tga::Interface& _tgai):deltaTime(0.016),tgai(_tgai){}
     
     void run(uint32_t width = 0, uint32_t height = 0, bool vSyncOn = true)
     {
@@ -41,7 +41,7 @@ class Framework
 
     protected:
     double deltaTime;
-    std::shared_ptr<tga::Interface> tgai;
+    tga::Interface& tgai;
     tga::Window _frameworkWindow;
     uint32_t _frameworkWindowWidth,_frameworkWindowHeight;
 };

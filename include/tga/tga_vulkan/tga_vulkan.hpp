@@ -8,90 +8,9 @@ namespace tga
 {
     /** \brief The Interface Implementation over the Vulkan API
      */
-    class TGAVulkan final : public Interface {
-    public:
-        TGAVulkan();
-        ~TGAVulkan();
-
-        Shader createShader(const ShaderInfo &shaderInfo) override;
-        Buffer createBuffer(const BufferInfo &bufferInfo) override;
-        Texture createTexture(const TextureInfo &textureInfo) override;
-        Window createWindow(const WindowInfo &windowInfo) override;
-        InputSet createInputSet(const InputSetInfo &inputSetInfo) override;
-        RenderPass createRenderPass(const RenderPassInfo &renderPassInfo) override;
-
-        ext::TopLevelAccelerationStructure createTopLevelAccelerationStructure(
-            const ext::TopLevelAccelerationStructureInfo &TLASInfo) override;
-        ext::BottomLevelAccelerationStructure createBottomLevelAccelerationStructure(
-            const ext::BottomLevelAccelerationStructureInfo &BLASInfo) override;
-
-        void beginCommandBuffer() override;
-        void beginCommandBuffer(CommandBuffer cmdBuffer) override;
-        void setRenderPass(RenderPass renderPass, uint32_t frambufferIndex) override;
-        void bindVertexBuffer(Buffer buffer) override;
-        void bindIndexBuffer(Buffer buffer) override;
-        void bindInputSet(InputSet inputSet) override;
-        void draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount = 1,
-                  uint32_t firstInstance = 0) override;
-        void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t instanceCount = 1,
-                         uint32_t firstInstance = 0) override;
-        void drawIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
-                          uint32_t stride = sizeof(tga::DrawIndirectCommand)) override;
-        void drawIndexedIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
-                                 uint32_t stride = sizeof(tga::DrawIndexedIndirectCommand)) override;
-        void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
-        CommandBuffer endCommandBuffer() override;
-        void execute(CommandBuffer commandBuffer) override;
-
-        void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset) override;
-        std::vector<uint8_t> readback(Buffer buffer) override;
-        std::vector<uint8_t> readback(Texture texture) override;
-
-        /** \copydoc Interface::backbufferCount(Window window)
-         */
-        uint32_t backbufferCount(Window window) override;
-
-        /** \copydoc Interface::nextFrame(Window window)
-         */
-        uint32_t nextFrame(Window window) override;
-
-        /** \copydoc Interface::pollEvents(Window window)
-         */
-        void pollEvents(Window window) override;
-
-        /** \copydoc Interface::present(Window window)
-         */
-        void present(Window window) override;
-
-        /** \copydoc Interface::setWindowTitle(Window window, const std::string &title)
-         */
-        void setWindowTitle(Window window, const std::string &title) override;
-
-        /** \copydoc Interface::windowShouldClose(Window window)
-         */
-        bool windowShouldClose(Window window) override;
-
-        /** \copydoc Interface::keyDown(Window window)
-         */
-        bool keyDown(Window window, Key key) override;
-
-        /** \copydoc Interface::mousePosition(Window window)
-         */
-        std::pair<int, int> mousePosition(Window window) override;
-
-        /** \copydoc Interface::screenResolution()
-         */
-        std::pair<uint32_t, uint32_t> screenResolution() override;
-
-        void free(Shader shader) override;
-        void free(Buffer buffer) override;
-        void free(Texture texture) override;
-        void free(Window window) override;
-        void free(InputSet inputSet) override;
-        void free(RenderPass renderPass) override;
-        void free(CommandBuffer commandBuffer) override;
-
-    private:
+    struct Interface::InternalState{
+        InternalState();
+        ~InternalState();
         // Vulkan Stuff
         VulkanWSI wsi;
         vk::Instance instance;
@@ -125,8 +44,6 @@ namespace tga
         void endOneTimeCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::CommandPool &cmdPool, vk::Queue &submitQueue);
 
         void fillBuffer(size_t size, const uint8_t *data, uint32_t offset, vk::Buffer target);
-        void transitionImageLayout(vk::CommandBuffer cmdBuffer, vk::Image image, vk::ImageLayout oldLayout,
-                                   vk::ImageLayout newLayout);
         void fillTexture(size_t size, const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target);
 
         // Bookkeeping
@@ -143,5 +60,13 @@ namespace tga
             vk::CommandBuffer cmdBuffer;
             RenderPass renderPass;
         } currentRecording;
+
+        void free(Shader shader);
+        void free(Buffer buffer);
+        void free(Texture texture);
+        void free(Window window);
+        void free(InputSet inputSet);
+        void free(RenderPass renderPass);
+        void free(CommandBuffer commandBuffer);
     };
 }  // namespace tga

@@ -2,7 +2,7 @@
 
 
 
-    CameraController::CameraController(std::shared_ptr<tga::Interface> _tgai, tga::Window _window, 
+    CameraController::CameraController(tga::Interface& _tgai, tga::Window _window, 
         float _fov,float _aspectRatio, float _nearPlane, float _farPlane,
         glm::vec3 _position, glm::vec3 _front, glm::vec3 _up):
             tgai(_tgai),window(_window),fov(_fov),aspectRatio(_aspectRatio),
@@ -37,17 +37,17 @@
     {
         float moveSpeed = speed;
 
-        if(tgai->keyDown(window,tga::Key::R))
+        if(tgai.keyDown(window,tga::Key::R))
             moveSpeed *= speedBoost;
 
 
-        if(tgai->keyDown(window,tga::Key::Left))
+        if(tgai.keyDown(window,tga::Key::Left))
             yaw += dt*turnSpeed;
-        if(tgai->keyDown(window,tga::Key::Right))
+        if(tgai.keyDown(window,tga::Key::Right))
             yaw -= dt*turnSpeed;
-        if(tgai->keyDown(window,tga::Key::Up))
+        if(tgai.keyDown(window,tga::Key::Up))
             pitch += dt*turnSpeed;
-        if(tgai->keyDown(window,tga::Key::Down))
+        if(tgai.keyDown(window,tga::Key::Down))
             pitch -= dt*turnSpeed;
 
         pitch = std::clamp(pitch,-89.f,89.f);
@@ -58,19 +58,19 @@
 
 
 
-        if(tgai->keyDown(window,tga::Key::W))
+        if(tgai.keyDown(window,tga::Key::W))
             position += lookDir*dt*moveSpeed;
-        if(tgai->keyDown(window,tga::Key::S))
+        if(tgai.keyDown(window,tga::Key::S))
             position -= lookDir*dt*moveSpeed;
 
-        if(tgai->keyDown(window,tga::Key::A))
+        if(tgai.keyDown(window,tga::Key::A))
             position += r*dt*moveSpeed;
-        if(tgai->keyDown(window,tga::Key::D))
+        if(tgai.keyDown(window,tga::Key::D))
             position -= r*dt*moveSpeed;
         
-        if(tgai->keyDown(window,tga::Key::Space))
+        if(tgai.keyDown(window,tga::Key::Space))
             position += up*dt*moveSpeed;
-        if(tgai->keyDown(window,tga::Key::Shift_Left))
+        if(tgai.keyDown(window,tga::Key::Shift_Left))
             position -= up*dt*moveSpeed;
     }
     void CameraController::updateData()

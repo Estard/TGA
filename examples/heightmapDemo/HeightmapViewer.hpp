@@ -24,7 +24,8 @@ struct WorldData{
 class HeightmapViewer
 {
     public:
-        HeightmapViewer(std::shared_ptr<tga::Interface> _tgai = std::make_shared<tga::TGAVulkan>());
+    HeightmapViewer();
+        HeightmapViewer(tga::Interface& _tgai);
         void setHeightmap(float* data, uint32_t imageWidth, uint32_t imageHeight, float terrainWidth, float terrainDepth, float terrainHeight);
         void setSurfaceLowTexture(uint8_t *rgba_data, uint32_t width, uint32_t height);
         void setSurfaceHighTexture(uint8_t *rgba_data, uint32_t width, uint32_t height);
@@ -36,7 +37,7 @@ class HeightmapViewer
 
     void createRescources();
 
-    std::shared_ptr<tga::Interface> tgai;
+    tga::Interface& tgai;
     std::unique_ptr<CameraController> camController;
 
     tga::Texture heightmap, grassTex, dirtTex, rockTex, snowTex;

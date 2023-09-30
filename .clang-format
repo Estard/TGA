@@ -5,11 +5,12 @@ IndentWidth: 4
 TabWidth: 4
 ColumnLimit: 0
 AccessModifierOffset: -4
-NamespaceIndentation: All
+NamespaceIndentation: Inner
 AllowShortIfStatementsOnASingleLine: true
 AllowShortCaseLabelsOnASingleLine: true
-PointerAlignmentStyle: Right 
-ReferenceAlignmentStyle: Left
+#PointerAlignmentStyle: Right 
+#ReferenceAlignmentStyle: Left
+PointerAlignment: Right 
 BreakBeforeBraces: Custom
 ColumnLimit: 120
 ConstructorInitializerAllOnOneLineOrOnePerLine: false

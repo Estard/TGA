@@ -5,14 +5,14 @@
 
 int main()
 {
-    std::shared_ptr<tga::Interface> tgai = std::make_shared<tga::TGAVulkan>();
+    tga::TGAVulkan tgai{};
 
     // Use utility function to load shaders from file
     tga::Shader vertexShader = tga::loadShader("shaders/drawIndirect_vert.spv", tga::ShaderType::vertex, tgai);
     tga::Shader fragmentShader = tga::loadShader("shaders/drawIndirect_frag.spv", tga::ShaderType::fragment, tgai);
 
-    auto [screenResX, screenResY] = tgai->screenResolution();
-    tga::Window window = tgai->createWindow({screenResX, screenResY});
+    auto [screenResX, screenResY] = tgai.screenResolution();
+    tga::Window window = tgai.createWindow({screenResX, screenResY});
 
     std::vector<tga::DrawIndirectCommand> indirectCommands{/*Draw red triangle*/
                                                            {/*vertexCount=*/3,
@@ -25,7 +25,7 @@ int main()
                                                            {6, 1, 6, 0}};
     // Create buffer storing the indirect draw commands
     tga::Buffer indirectDrawBuffer =
-        tgai->createBuffer({tga::BufferUsage::indirect, tga::memoryAccess(indirectCommands),
+        tgai.createBuffer({tga::BufferUsage::indirect, tga::memoryAccess(indirectCommands),
                             indirectCommands.size() * sizeof(tga::DrawIndirectCommand)});
 
     struct Vertex {
@@ -54,31 +54,31 @@ int main()
 
     tga::VertexLayout vertexLayout(sizeof(Vertex), {{offsetof(Vertex, position), tga::Format::r32g32_sfloat},
                                                     {offsetof(Vertex, color), tga::Format::r32g32b32_sfloat}});
-    tga::Buffer vertexBuffer = tgai->createBuffer(
+    tga::Buffer vertexBuffer = tgai.createBuffer(
         {tga::BufferUsage::vertex, tga::memoryAccess(vertexBufferCPU), vertexBufferCPU.size() * sizeof(Vertex)});
 
     tga::RenderPassInfo rpInfo{{vertexShader, fragmentShader}, window};
     rpInfo.vertexLayout = vertexLayout;
 
-    tga::RenderPass renderPass = tgai->createRenderPass(rpInfo);
+    tga::RenderPass renderPass = tgai.createRenderPass(rpInfo);
 
     tga::CommandBuffer cmdBuffer;
 
-    while (!tgai->windowShouldClose(window)) {
-        tgai->beginCommandBuffer(cmdBuffer);
+    while (!tgai.windowShouldClose(window)) {
+        tgai.beginCommandBuffer(cmdBuffer);
 
-        tgai->setRenderPass(renderPass, tgai->nextFrame(window));
+        tgai.setRenderPass(renderPass, tgai.nextFrame(window));
 
-        tgai->bindVertexBuffer(vertexBuffer);
+        tgai.bindVertexBuffer(vertexBuffer);
 
         // Use indirect draw buffer for 3 draw commands
-        tgai->drawIndirect(indirectDrawBuffer,
+        tgai.drawIndirect(indirectDrawBuffer,
                            indirectCommands.size() /*offset=0, stride=sizeof(tga::DrawIndirectCommand)*/);
 
-        cmdBuffer = tgai->endCommandBuffer();
+        cmdBuffer = tgai.endCommandBuffer();
 
-        tgai->execute(cmdBuffer);
-        tgai->present(window);
+        tgai.execute(cmdBuffer);
+        tgai.present(window);
     }
     return 0;
 }

@@ -17,7 +17,7 @@ namespace tga
                  {offsetof(Vertex, tangent), tga::Format::r32g32b32_sfloat}}};
     }
 
-    Shader loadShader(std::string const& filepath, ShaderType shaderType, std::shared_ptr<Interface> const& tgai)
+    Shader loadShader(std::string const& filepath, ShaderType shaderType, tga::Interface& tgai)
     {
         std::ifstream file(filepath, std::ios::binary);
         if (!file.is_open()) throw std::runtime_error("[Error]: Failed to open file " + filepath);
@@ -26,7 +26,7 @@ namespace tga
         data.resize(fileSize);
         file.read(data.data(), fileSize);
         file.close();
-        return tgai->createShader({shaderType, (uint8_t*)data.data(), data.size()});
+        return tgai.createShader({shaderType, (uint8_t*)data.data(), data.size()});
     }
 
     int formatComponentCount(Format format)
@@ -80,7 +80,7 @@ namespace tga
     }
 
     TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode,
-                              AddressMode addressMode, std::shared_ptr<Interface> const& tgai, bool doGammaCorrection)
+                              AddressMode addressMode, tga::Interface& tgai, bool doGammaCorrection)
     {
         int width, height, channels;
         int components = formatComponentCount(format);
@@ -103,7 +103,7 @@ namespace tga
 
         if (!data) throw std::runtime_error("[TGA] Utils: Can't load image: " + filepath);
 
-        auto texture = tgai->createTexture({static_cast<uint32_t>(width), static_cast<uint32_t>(height), format, data,
+        auto texture = tgai.createTexture({static_cast<uint32_t>(width), static_cast<uint32_t>(height), format, data,
                                             dataSize, samplerMode, addressMode});
 
         stbi_image_free(data);
@@ -111,7 +111,7 @@ namespace tga
     }
 
     TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMode samplerMode,
-                              std::shared_ptr<Interface> const& tgai, bool doGammaCorrection)
+                              tga::Interface& tgai, bool doGammaCorrection)
     {
         return loadTexture(filepath, format, samplerMode, tga::AddressMode::clampBorder, tgai, doGammaCorrection);
     }
