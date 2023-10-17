@@ -10,12 +10,12 @@ namespace tga
         ~VulkanWSI();
 
         std::vector<const char*> getRequiredExtensions() const;
-        Window createWindow(const WindowInfo&, vk::Instance&, vk::PhysicalDevice&, vk::Device&, uint32_t queueFamiliy);
+        Window createWindow(const WindowInfo&, vk::Instance&, vk::PhysicalDevice&, vk::Device&, uint32_t queueFamily);
         void setWindowTitle(Window window, const char* title);
         void free(Window window, vk::Instance&, vk::Device&);
-        uint32_t aquireNextImage(Window window, vk::Device&);
+        //uint32_t aquireNextImage(Window window, vk::Device&);
         void pollEvents(Window window);
-        void presentImage(Window window, vk::Queue&);
+        //void presentImage(Window window, vk::Queue&);
 
         bool windowShouldClose(Window window);
 
@@ -24,10 +24,10 @@ namespace tga
 
         std::pair<uint32_t, uint32_t> screenResolution() const;
 
-        Window_vkData& getWindow(Window window);
+        vkData::Window& getWindow(Window window);
 
         // window handle to data
-        std::unordered_map<Window, Window_vkData> windows;
+        std::unordered_map<Window, vkData::Window> windows;
     };
 
 };  // namespace tga

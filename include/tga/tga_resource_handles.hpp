@@ -12,6 +12,7 @@ extern "C" {
 
 TGA_DEFINE_NON_DISPATCHABLE_HANDLE(TgaShader)
 TGA_DEFINE_NON_DISPATCHABLE_HANDLE(TgaBuffer)
+TGA_DEFINE_NON_DISPATCHABLE_HANDLE(TgaStagingBuffer)
 TGA_DEFINE_NON_DISPATCHABLE_HANDLE(TgaTexture)
 TGA_DEFINE_NON_DISPATCHABLE_HANDLE(TgaWindow)
 TGA_DEFINE_NON_DISPATCHABLE_HANDLE(TgaInputSet)
@@ -70,6 +71,10 @@ namespace tga
      */
     TGA_TYPE_SAFE_HANDLE_STRUCT(Buffer);
 
+    /** \brief A StagingBuffer represents a chunk of memory on the CPU that is readable by the GPU.
+     */
+    TGA_TYPE_SAFE_HANDLE_STRUCT(StagingBuffer);
+
     /** \brief A Texture represents an image that is stored on and used by the GPU.
      */
     TGA_TYPE_SAFE_HANDLE_STRUCT(Texture);
@@ -85,6 +90,10 @@ namespace tga
     /** \brief A RenderPass describes a configuration of the graphics-pipeline.
      */
     TGA_TYPE_SAFE_HANDLE_STRUCT(RenderPass);
+
+     /** \brief A ComputePass describes a configuration of the compute-pipeline.
+     */
+    TGA_TYPE_SAFE_HANDLE_STRUCT(ComputePass);
 
     /** \brief A CommandBuffer is a list of instructions to be executed by the GPU.
      */

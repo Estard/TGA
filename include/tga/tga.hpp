@@ -27,104 +27,192 @@
 namespace tga
 {
 
-    /** \brief The abstract Interface to the Trainings Graphics API
-     *
+/** \brief The abstract Interface to the Trainings Graphics API
+ *
+ */
+class Interface {
+public:
+    Interface();
+    ~Interface();
+    // Resource Creation
+    Shader createShader(ShaderInfo const&);
+    StagingBuffer createStagingBuffer(StagingBufferInfo const&);
+    Buffer createBuffer(BufferInfo const&);
+    Texture createTexture(TextureInfo const&);
+    Window createWindow(WindowInfo const&);
+    InputSet createInputSet(InputSetInfo const&);
+    RenderPass createRenderPass(RenderPassInfo const&);
+    ComputePass createComputePass(ComputePassInfo const&);
+
+    ext::TopLevelAccelerationStructure createTopLevelAccelerationStructure(
+        ext::TopLevelAccelerationStructureInfo const&);
+    ext::BottomLevelAccelerationStructure createBottomLevelAccelerationStructure(
+        ext::BottomLevelAccelerationStructureInfo const&);
+
+    void execute(CommandBuffer commandBuffer);
+
+
+    void* getMapping(StagingBuffer);
+
+    // void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset);
+    // std::vector<uint8_t> readback(Buffer buffer);
+    // std::vector<uint8_t> readback(Texture texture);
+
+    // Window functions
+
+    /** \brief Number of framebuffers used by a window.
+     * \return Number of framebuffers used as backbuffers by a window
      */
-    class Interface {
-    public:
-        Interface();
-        ~Interface();
-        // Resource Creation
-        Shader createShader(ShaderInfo const& shaderInfo);
-        Buffer createBuffer(BufferInfo const& bufferInfo);
-        Texture createTexture(TextureInfo const& textureInfo);
-        Window createWindow(WindowInfo const& windowInfo);
-        InputSet createInputSet(InputSetInfo const& inputSetInfo);
-        RenderPass createRenderPass(RenderPassInfo const& renderPassInfo);
+    uint32_t backbufferCount(Window window);
 
-        ext::TopLevelAccelerationStructure createTopLevelAccelerationStructure(
-            ext::TopLevelAccelerationStructureInfo const& TLASInfo);
-        ext::BottomLevelAccelerationStructure createBottomLevelAccelerationStructure(
-            ext::BottomLevelAccelerationStructureInfo const& BLASInfo);
+    /** \brief Index of the next available framebuffer & polling of events.
+     * \return Index of next available framebuffer
+     */
+    uint32_t nextFrame(Window window);
 
-        // Commands
-        void beginCommandBuffer();
-        void beginCommandBuffer(CommandBuffer cmdBuffer);
-        void setRenderPass(RenderPass renderPass, uint32_t framebufferIndex);
-        void bindVertexBuffer(Buffer buffer);
-        void bindIndexBuffer(Buffer buffer);
-        void bindInputSet(InputSet inputSet);
-        void draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount = 1,
-                          uint32_t firstInstance = 0);
-        void drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset,
-                                 uint32_t instanceCount = 1, uint32_t firstInstance = 0);
-        void drawIndirect(Buffer buffer, uint32_t drawCount, size_t offset,
-                                  uint32_t stride = sizeof(tga::DrawIndirectCommand));
-        void drawIndexedIndirect(Buffer buffer, uint32_t drawCount, size_t offset,
-                                         uint32_t stride = sizeof(tga::DrawIndexedIndirectCommand));
-        void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
-        CommandBuffer endCommandBuffer();
-        void execute(CommandBuffer commandBuffer);
+    /** \brief Polling of events.
+     */
+    void pollEvents(Window window);
 
-        void updateBuffer(Buffer buffer, uint8_t const* data, size_t dataSize, uint32_t offset);
-        std::vector<uint8_t> readback(Buffer buffer);
-        std::vector<uint8_t> readback(Texture texture);
+    /** \brief Shows the acquired framebuffer on screen.
+     */
+    void present(Window window, uint32_t framebufferIndex);
 
-        // Window functions
+    /** \brief Changes title of window.
+     * \param title New title of window
+     */
+    void setWindowTitle(Window window, std::string const& title);
 
-        /** \brief Number of framebuffers used by a window.
-         * \return Number of framebuffers used as backbuffers by a window
-         */
-        uint32_t backbufferCount(Window window);
+    /** \brief True if user has issued a close command (pressed x) on the window.
+     */
+    bool windowShouldClose(Window window);
 
-        /** \brief Index of the next available framebuffer & polling of events.
-         * \return Index of next available framebuffer
-         */
-        uint32_t nextFrame(Window window);
+    /** \brief True if a key from keyboard or mouse was pressed during the last event poll.
+     * \param key Key code of the mouse or keyboard key
+     */
+    bool keyDown(Window window, Key key);
 
-        /** \brief Polling of events.
-         */
-        void pollEvents(Window window);
+    /** \brief x and y position of mouse in pixel coordinates relative to window
+     * \return pair (x,y) in pixel coordinates
+     */
+    std::pair<int, int> mousePosition(Window window);
 
-        /** \brief Shows the last acquired framebuffer on screen.
-         */
-        void present(Window window);
+    /** \brief Resolution of the primary monitor in pixels
+     * \return pair (width,height) in pixel
+     */
+    std::pair<uint32_t, uint32_t> screenResolution();
 
-        /** \brief Changes title of window.
-         * \param title New title of window
-         */
-        void setWindowTitle(Window window, std::string const& title);
+    // Freedom
+    void free(Shader);
+    void free(StagingBuffer);
+    void free(Buffer);
+    void free(Texture);
+    void free(Window);
+    void free(InputSet);
+    void free(RenderPass);
+    void free(ComputePass);
+    void free(CommandBuffer);
 
-        /** \brief True if user has issued a close command (pressed x) on the window.
-         */
-        bool windowShouldClose(Window window);
+private:
+    friend struct CommandRecorder;
+    CommandBuffer beginCommandBuffer(CommandBuffer cmdBuffer);
+    void setRenderPass(CommandBuffer, RenderPass, uint32_t framebufferIndex);
+    void setComputePass(CommandBuffer, ComputePass);
+    void bindVertexBuffer(CommandBuffer, Buffer);
+    void bindIndexBuffer(CommandBuffer, Buffer);
+    void bindInputSet(CommandBuffer, InputSet);
+    void draw(CommandBuffer, uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount,
+              uint32_t firstInstance);
+    void drawIndexed(CommandBuffer, uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset,
+                     uint32_t instanceCount, uint32_t firstInstance);
+    void drawIndirect(CommandBuffer, Buffer indirectDrawBuffer, uint32_t drawCount, size_t offset, uint32_t stride);
+    void drawIndexedIndirect(CommandBuffer, Buffer indirectDrawBuffer, uint32_t drawCount, size_t offset,
+                             uint32_t stride);
+    void barrier(CommandBuffer);
+    void dispatch(CommandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+    void endCommandBuffer(CommandBuffer);
 
-        /** \brief True if a key from keyboard or mouse was pressed during the last event poll.
-         * \param key Key code of the mouse or keyboard key
-         */
-        bool keyDown(Window window, Key key);
+private:
+    struct InternalState;
+    std::unique_ptr<InternalState> state;
+};
 
-        /** \brief x and y position of mouse in pixel coordinates relative to window
-         * \return pair (x,y) in pixel coordinates
-         */
-        std::pair<int, int> mousePosition(Window window);
+class CommandRecorder {
+public:
+    CommandRecorder(Interface& _tgai, CommandBuffer _cmdBuffer = {})
+        : tgai(_tgai), cmdBuffer(tgai.beginCommandBuffer(_cmdBuffer))
+    {}
+    ~CommandRecorder()
+    {
+        if (cmdBuffer) tgai.endCommandBuffer(cmdBuffer);
+    }
 
-        /** \brief Resolution of the primary monitor in pixels
-         * \return pair (width,height) in pixel
-         */
-        std::pair<uint32_t, uint32_t> screenResolution();
+    CommandRecorder& setRenderPass(RenderPass renderPass, uint32_t framebufferIndex)
+    {
+        tgai.setRenderPass(cmdBuffer, renderPass, framebufferIndex);
+        return *this;
+    }
+    CommandRecorder& bindVertexBuffer(Buffer buffer)
+    {
+        tgai.bindVertexBuffer(cmdBuffer, buffer);
+        return *this;
+    }
+    CommandRecorder& bindIndexBuffer(Buffer buffer)
+    {
+        tgai.bindIndexBuffer(cmdBuffer, buffer);
+        return *this;
+    }
+    CommandRecorder& bindInputSet(InputSet inputSet)
+    {
+        tgai.bindInputSet(cmdBuffer, inputSet);
+        return *this;
+    }
+    CommandRecorder& draw(uint32_t vertexCount, uint32_t firstVertex, uint32_t instanceCount = 1,
+                          uint32_t firstInstance = 0)
+    {
+        tgai.draw(cmdBuffer, vertexCount, firstVertex, instanceCount, firstInstance);
+        return *this;
+    }
+    CommandRecorder& drawIndexed(uint32_t indexCount, uint32_t firstIndex, uint32_t vertexOffset,
+                                 uint32_t instanceCount = 1, uint32_t firstInstance = 0)
+    {
+        tgai.drawIndexed(cmdBuffer, indexCount, firstIndex, vertexOffset, instanceCount, firstInstance);
+        return *this;
+    }
+    CommandRecorder& drawIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
+                                  uint32_t stride = sizeof(tga::DrawIndirectCommand))
+    {
+        tgai.drawIndirect(cmdBuffer, buffer, drawCount, offset, stride);
+        return *this;
+    }
+    CommandRecorder& drawIndexedIndirect(Buffer buffer, uint32_t drawCount, size_t offset = 0,
+                                         uint32_t stride = sizeof(tga::DrawIndexedIndirectCommand))
+    {
+        tgai.drawIndexedIndirect(cmdBuffer, buffer, drawCount, offset, stride);
+        return *this;
+    }
 
-        // Freedom
-        void free(Shader shader);
-        void free(Buffer buffer);
-        void free(Texture texture);
-        void free(Window window);
-        void free(InputSet inputSet);
-        void free(RenderPass renderPass);
-        void free(CommandBuffer commandBuffer);
+    CommandRecorder& setComputePass(ComputePass computePass)
+    {
+        tgai.setComputePass(cmdBuffer, computePass);
+        return *this;
+    }
+    CommandRecorder& dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+    {
+        tgai.dispatch(cmdBuffer, groupCountX, groupCountY, groupCountZ);
+        return *this;
+    }
+    CommandBuffer endRecording()
+    {
+        tgai.endCommandBuffer(cmdBuffer);
+        auto result = cmdBuffer;
+        cmdBuffer = {};
+        return result;
+    }
 
-        private:
-        struct InternalState;
-        std::unique_ptr<InternalState> state;
-    };
+private:
+    Interface& tgai;
+    CommandBuffer cmdBuffer;
+};
+
 }  // namespace tga
