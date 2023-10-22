@@ -38,7 +38,7 @@ namespace /*conversion from tga to vulkan*/
         return usageFlags;
     }
 
-    vk::Format determineImageFormat(tga::Format format)
+    vk::Format tgaFormatToVkFormat(tga::Format format)
     {
         switch (format) {
             case Format::r8_uint: return vk::Format::eR8Uint;
@@ -81,37 +81,13 @@ namespace /*conversion from tga to vulkan*/
         }
     }
 
-    // std::tuple<vk::Filter, vk::SamplerAddressMode> determineSamplerInfo(const TextureInfo& textureInfo)
-    // {
-    //     auto filter = vk::Filter::eNearest;
-    //     if (textureInfo.samplerMode == SamplerMode::linear) filter = vk::Filter::eLinear;
-    //     vk::SamplerAddressMode addressMode{vk::SamplerAddressMode::eClampToBorder};
-    //     switch (textureInfo.addressMode) {
-    //         case AddressMode::clampEdge: addressMode = vk::SamplerAddressMode::eClampToEdge; break;
-    //         case AddressMode::clampBorder: addressMode = vk::SamplerAddressMode::eClampToBorder; break;
-    //         case AddressMode::repeat: addressMode = vk::SamplerAddressMode::eRepeat; break;
-    //         case AddressMode::repeatMirror: addressMode = vk::SamplerAddressMode::eMirroredRepeat; break;
-    //     }
-    //     return {filter, addressMode};
-    // }
-
-    // vk::ShaderStageFlagBits determineShaderStage(tga::ShaderType shaderType)
-    // {
-    //     switch (shaderType) {
-    //         case ShaderType::vertex: return vk::ShaderStageFlagBits::eVertex;
-    //         case ShaderType::fragment: return vk::ShaderStageFlagBits::eFragment;
-    //         case ShaderType::compute: return vk::ShaderStageFlagBits::eCompute;
-    //         default: return vk::ShaderStageFlagBits::eAllGraphics;
-    //     }
-    // }
-
     std::vector<vk::VertexInputAttributeDescription> determineVertexAttributes(
         std::vector<VertexAttribute> const& attributes)
     {
         std::vector<vk::VertexInputAttributeDescription> descriptions{};
         for (uint32_t i = 0; i < attributes.size(); i++) {
             descriptions.emplace_back(vk::VertexInputAttributeDescription(
-                i, 0, determineImageFormat(attributes[i].format), static_cast<uint32_t>(attributes[i].offset)));
+                i, 0, tgaFormatToVkFormat(attributes[i].format), static_cast<uint32_t>(attributes[i].offset)));
         }
         return descriptions;
     }
@@ -171,102 +147,6 @@ namespace /*conversion from tga to vulkan*/
                 vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
                     vk::ColorComponentFlagBits::eA};
     }
-
-    // vk::DescriptorType determineDescriptorType(tga::BindingType bindingType)
-    // {
-    //     switch (bindingType) {
-    //         case BindingType::uniformBuffer: return vk::DescriptorType::eUniformBuffer;
-    //         case BindingType::sampler: return vk::DescriptorType::eCombinedImageSampler;
-    //         case BindingType::storageBuffer: return vk::DescriptorType::eStorageBuffer;
-    //         default: return vk::DescriptorType::eInputAttachment;
-    //     }
-    // }
-
-    // vk::AccessFlags layoutToAccessFlags(vk::ImageLayout layout)
-    // {
-    //     switch (layout) {
-    //         case vk::ImageLayout::eUndefined: return {};
-    //         case vk::ImageLayout::eTransferDstOptimal: return vk::AccessFlagBits::eTransferWrite;
-    //         case vk::ImageLayout::eTransferSrcOptimal: return vk::AccessFlagBits::eTransferRead;
-    //         case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::AccessFlagBits::eShaderRead;
-    //         case vk::ImageLayout::eColorAttachmentOptimal:
-    //             return vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
-    //         case vk::ImageLayout::ePresentSrcKHR: return vk::AccessFlagBits::eMemoryRead;
-    //         case vk::ImageLayout::eGeneral: return vk::AccessFlagBits::eShaderRead |
-    //         vk::AccessFlagBits::eShaderWrite; case vk::ImageLayout::eDepthStencilAttachmentOptimal:
-    //             return vk::AccessFlagBits::eDepthStencilAttachmentRead |
-    //                    vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-    //         case vk::ImageLayout::eDepthAttachmentOptimal:
-    //             return vk::AccessFlagBits::eDepthStencilAttachmentRead |
-    //                    vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-    //         case vk::ImageLayout::eStencilAttachmentOptimal:
-    //             return vk::AccessFlagBits::eDepthStencilAttachmentRead |
-    //                    vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-    //         default: throw std::runtime_error("[TGA Vulkan] Layout to AccessFlags transition not supported"); ;
-    //     }
-    // }
-
-    // TODO use?
-    // vk::PipelineStageFlags layoutToPipelineStageFlags(vk::ImageLayout layout)
-    // {
-    //     switch (layout) {
-    //         case vk::ImageLayout::eUndefined: return vk::PipelineStageFlagBits::eTopOfPipe;
-    //         case vk::ImageLayout::eTransferDstOptimal: return vk::PipelineStageFlagBits::eTransfer;
-    //         case vk::ImageLayout::eTransferSrcOptimal: return vk::PipelineStageFlagBits::eTransfer;
-    //         case vk::ImageLayout::eShaderReadOnlyOptimal: return vk::PipelineStageFlagBits::eVertexShader;
-    //         case vk::ImageLayout::eColorAttachmentOptimal: return vk::PipelineStageFlagBits::eFragmentShader;
-    //         case vk::ImageLayout::ePresentSrcKHR: return vk::PipelineStageFlagBits::eAllGraphics;
-    //         case vk::ImageLayout::eGeneral: return vk::PipelineStageFlagBits::eAllCommands;
-    //         case vk::ImageLayout::eDepthStencilAttachmentOptimal: return
-    //         vk::PipelineStageFlagBits::eEarlyFragmentTests; case vk::ImageLayout::eDepthAttachmentOptimal: return
-    //         vk::PipelineStageFlagBits::eEarlyFragmentTests; case vk::ImageLayout::eStencilAttachmentOptimal: return
-    //         vk::PipelineStageFlagBits::eEarlyFragmentTests; default: throw std::runtime_error("[TGA Vulkan] Layout to
-    //         PipelineStageFlags transition not supported");
-    //     }
-    // }
-
-    // vk::PipelineStageFlags accessToPipelineStageFlags(vk::AccessFlags accessFlags)
-    // {
-    //     if (accessFlags == vk::AccessFlags{}) return vk::PipelineStageFlagBits::eTopOfPipe;
-    //     vk::PipelineStageFlags pipelineStageFlags{};
-    //     if ((accessFlags & vk::AccessFlagBits::eIndirectCommandRead) == vk::AccessFlagBits::eIndirectCommandRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eDrawIndirect;
-    //     if ((accessFlags & vk::AccessFlagBits::eIndexRead) == vk::AccessFlagBits::eIndexRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
-    //     if ((accessFlags & vk::AccessFlagBits::eVertexAttributeRead) == vk::AccessFlagBits::eVertexAttributeRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexInput;
-    //     if ((accessFlags & vk::AccessFlagBits::eUniformRead) == vk::AccessFlagBits::eUniformRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
-    //     if ((accessFlags & vk::AccessFlagBits::eShaderRead) == vk::AccessFlagBits::eShaderRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
-    //     if ((accessFlags & vk::AccessFlagBits::eShaderWrite) == vk::AccessFlagBits::eShaderWrite)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eVertexShader;
-    //     if ((accessFlags & vk::AccessFlagBits::eInputAttachmentRead) == vk::AccessFlagBits::eInputAttachmentRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eFragmentShader;
-    //     if ((accessFlags & vk::AccessFlagBits::eColorAttachmentRead) == vk::AccessFlagBits::eColorAttachmentRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    //     if ((accessFlags & vk::AccessFlagBits::eColorAttachmentWrite) == vk::AccessFlagBits::eColorAttachmentWrite)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    //     if ((accessFlags & vk::AccessFlagBits::eDepthStencilAttachmentRead) ==
-    //         vk::AccessFlagBits::eDepthStencilAttachmentRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
-    //     if ((accessFlags & vk::AccessFlagBits::eDepthStencilAttachmentWrite) ==
-    //         vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eEarlyFragmentTests;
-    //     if ((accessFlags & vk::AccessFlagBits::eTransferRead) == vk::AccessFlagBits::eTransferRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
-    //     if ((accessFlags & vk::AccessFlagBits::eTransferWrite) == vk::AccessFlagBits::eTransferWrite)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eTransfer;
-    //     if ((accessFlags & vk::AccessFlagBits::eHostRead) == vk::AccessFlagBits::eHostRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eHost;
-    //     if ((accessFlags & vk::AccessFlagBits::eHostWrite) == vk::AccessFlagBits::eHostWrite)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eHost;
-    //     if ((accessFlags & vk::AccessFlagBits::eMemoryRead) == vk::AccessFlagBits::eMemoryRead)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eBottomOfPipe;
-    //     if ((accessFlags & vk::AccessFlagBits::eMemoryWrite) == vk::AccessFlagBits::eMemoryWrite)
-    //         pipelineStageFlags |= vk::PipelineStageFlagBits::eAllGraphics;
-    //     return pipelineStageFlags;
-    // }
 
 }  // namespace
 
@@ -474,13 +354,11 @@ vkData::InputSet& Interface::InternalState::getData(InputSet handle) {return inp
 vkData::RenderPass& Interface::InternalState::getData(RenderPass handle) {return renderPasses[dataIndexFromRawHandle<TgaRenderPass>(handle)]; }
 vkData::ComputePass& Interface::InternalState::getData(ComputePass handle) {return computePasses[dataIndexFromRawHandle<TgaComputePass>(handle)]; }
 vkData::CommandBuffer& Interface::InternalState::getData(CommandBuffer handle) {return commandBuffers[dataIndexFromRawHandle<TgaCommandBuffer>(handle)]; }
+vkData::ext::AccelerationStructure& Interface::InternalState::getData(ext::TopLevelAccelerationStructure handle){ return acclerationStructures[dataIndexFromRawHandle<TgaTopLevelAccelerationStructure>(handle)];};
+vkData::ext::AccelerationStructure& Interface::InternalState::getData(ext::BottomLevelAccelerationStructure handle){ return acclerationStructures[dataIndexFromRawHandle<TgaBottomLevelAccelerationStructure>(handle)];};
 // clang-format on
 
-Interface::Interface() : state(std::make_unique<InternalState>())
-{
-    std::cout << "TGA Vulkan Created\n";
-    createBottomLevelAccelerationStructure({});
-}
+Interface::Interface() : state(std::make_unique<InternalState>()) { std::cout << "TGA Vulkan: Interface opened\n"; }
 
 Interface::~Interface()
 {
@@ -498,6 +376,7 @@ Interface::~Interface()
     for (size_t i = 0; i < state->renderPasses.size(); ++i) free(toRawHandle<TgaRenderPass>(i + 1));
     for (size_t i = 0; i < state->computePasses.size(); ++i) free(toRawHandle<TgaComputePass>(i + 1));
     for (size_t i = 0; i < state->commandBuffers.size(); ++i) free(toRawHandle<TgaCommandBuffer>(i + 1));
+    for (size_t i = 0; i < state->acclerationStructures.size(); ++i) free(toRawHandle<TgaTopLevelAccelerationStructure>(i + 1));
 
     while (!wsi.windows.empty()) free(wsi.windows.begin()->first);
 
@@ -506,6 +385,7 @@ Interface::~Interface()
     device.destroy();
     if (debugger) instance.destroy(debugger);
     instance.destroy();
+    std::cout << "TGA Vulkan: Interface closed\n";
 }
 
 /*Interface Methodes*/
@@ -525,8 +405,8 @@ StagingBuffer Interface::createStagingBuffer(StagingBufferInfo const& bufferInfo
     auto& stagingBuffers = state->stagingBuffers;
 
     auto& device = state->device;
-    auto renderQueueFamily = state->renderQueueFamily;
-    auto hostMemoryIndex = state->hostMemoryIndex;
+    auto& renderQueueFamily = state->renderQueueFamily;
+    auto& hostMemoryIndex = state->hostMemoryIndex;
 
     auto buffer =
         device.createBuffer(vk::BufferCreateInfo()
@@ -563,7 +443,7 @@ Buffer Interface::createBuffer(BufferInfo const& bufferInfo)
     vk::DeviceMemory vkMemory = device.allocateMemory({mr.size, deviceMemoryIndex});
     device.bindBufferMemory(buffer, vkMemory, 0);
 
-    buffers.push_back({buffer, vkMemory, usage, mr.size});
+    buffers.push_back({buffer, vkMemory, usage, bufferInfo.size});
     tga::Buffer handle{toRawHandle<TgaBuffer>(buffers.size())};
 
     if (bufferInfo.srcData) {
@@ -587,7 +467,7 @@ Texture Interface::createTexture(TextureInfo const& textureInfo)
     auto& cmdPool = state->cmdPool;
     auto& renderQueue = state->renderQueue;
 
-    vk::Format format = determineImageFormat(textureInfo.format);
+    vk::Format format = tgaFormatToVkFormat(textureInfo.format);
 
     auto texType = textureInfo.textureType;
     vk::Extent3D extent{textureInfo.width, textureInfo.height,
@@ -753,12 +633,6 @@ Window Interface::createWindow(WindowInfo const& windowInfo)
                 .setDstAccessMask(vk::AccessFlagBits::eMemoryRead));
         toPresentSrcCmd.end();
     }
-    // auto& data = wsi.getWindow(window);
-    // OneTimeCommand ot{device, cmdPool, renderQueue};
-    // for (auto& image : data.images)
-    // ot.cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTopOfPipe, {}, {}, {},
-    //    layoutTransitionBarrier(image, vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR,
-    //    vk::ImageAspectFlagBits::eColor));
     return window;
 }
 InputSet Interface::createInputSet(InputSetInfo const& inputSetInfo)
@@ -943,7 +817,7 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
             .setDstSubpass(0)
             .setSrcStageMask(
                 vk::PipelineStageFlagBits::eColorAttachmentOutput)  // TODO: determine safe stage mask for sync
-            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+            .setDstStageMask(vk::PipelineStageFlagBits::eFragmentShader)
             .setSrcAccessMask(vk::AccessFlagBits::eMemoryWrite)
             .setDstAccessMask(vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite);
 
@@ -1087,46 +961,216 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
     return tga::RenderPass{toRawHandle<TgaRenderPass>(renderPasses.size())};
 }
 
-ext::TopLevelAccelerationStructure createTopLevelAccelerationStructure(
+ComputePass Interface::createComputePass(ComputePassInfo const& computePassInfo)
+{
+    auto& device = state->device;
+    auto& computeShaderModule = state->getData(computePassInfo.computeShader).module;
+    auto& computePasses = state->computePasses;
+
+    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts{};
+    // The types need to be remembered since it is can't be infered from the input later
+    std::vector<std::vector<vk::DescriptorType>> setDescriptorTypes{};
+    for (auto& setLayout : computePassInfo.inputLayout) {
+        std::vector<vk::DescriptorSetLayoutBinding> bindings{};
+        std::vector<vk::DescriptorType> bindingTypes{};
+        for (uint32_t i = 0; i < setLayout.size(); ++i) {
+            auto type = [&]() {
+                switch (setLayout[i].type) {
+                    case tga::BindingType::sampler: return vk::DescriptorType::eCombinedImageSampler;
+                    case tga::BindingType::storageBuffer: return vk::DescriptorType::eStorageBuffer;
+                    case tga::BindingType::uniformBuffer: return vk::DescriptorType::eUniformBuffer;
+                    case tga::BindingType::storageImage: return vk::DescriptorType::eStorageImage;
+                    case tga::BindingType::accelerationStructure: return vk::DescriptorType::eAccelerationStructureKHR;
+                };
+                return vk::DescriptorType::eCombinedImageSampler;
+            }();
+            bindings.push_back(
+                vk::DescriptorSetLayoutBinding(i, type, setLayout[i].count, vk::ShaderStageFlagBits::eAll));
+            bindingTypes.push_back(type);
+        }
+        setDescriptorTypes.push_back(std::move(bindingTypes));
+        descriptorSetLayouts.push_back(device.createDescriptorSetLayout({{}, bindings}));
+    }
+
+    auto pipelineLayout = device.createPipelineLayout({{}, descriptorSetLayouts});
+
+    auto pipeline =
+        device
+            .createComputePipeline({}, {{},
+                                        vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eCompute,
+                                                                          computeShaderModule, "main"),
+                                        pipelineLayout})
+            .value;
+
+    computePasses.push_back(
+        {pipeline, vkData::Layout{pipelineLayout, std::move(descriptorSetLayouts), std::move(setDescriptorTypes)}});
+    return tga::ComputePass{toRawHandle<TgaComputePass>(computePasses.size())};
+}
+
+ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructure(
     ext::TopLevelAccelerationStructureInfo const& TLASInfo)
 {
-    /*
-    1. Get Size info
-    2. Allocate Memory
-    3. Create Host Handle
-    4. Build Structure
-    */
+    auto& device = state->device;
+    auto& renderQueue = state->renderQueue;
+    auto& renderQueueFamily = state->renderQueueFamily;
+    auto& cmdPool = state->cmdPool;
+    auto& deviceMemoryIndex = state->deviceMemoryIndex;
+    auto& acclerationStructures = state->acclerationStructures;
 
-    return {};
+    std::vector<vk::AccelerationStructureInstanceKHR> instances;
+
+    for (auto& instance : TLASInfo.instanceInfos) {
+        instances.emplace_back()
+            .setTransform(instance.transform)
+            .setAccelerationStructureReference(
+                device.getAccelerationStructureAddressKHR(state->getData(instance.blas).accelerationStructure))
+            .setFlags(vk::GeometryInstanceFlagBitsKHR::eForceOpaque);
+    }
+    // acinstance.setTransform()
+    //.setInstanceCustomIndex()
+    //.setAccelerationStructureReference()
+    //.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+
+    auto instanceData = vk::AccelerationStructureGeometryInstancesDataKHR{}.setData(instances.data());
+    // TODO one expects many here
+    auto instanceGeometry = vk::AccelerationStructureGeometryKHR{}.setGeometry(instanceData);
+
+    auto maxPrimitives = TLASInfo.instanceInfos.size();
+
+    vk::AccelerationStructureBuildGeometryInfoKHR buildInfo;
+    buildInfo.setType(vk::AccelerationStructureTypeKHR::eTopLevel)
+        .setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
+        .setGeometries(instanceGeometry)
+        .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+
+    auto buildSizes = device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
+                                                                   buildInfo, maxPrimitives);
+
+    auto acBuffer = device.createBuffer(vk::BufferCreateInfo()
+                                            .setSize(buildSizes.accelerationStructureSize)
+                                            .setUsage(vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+                                                      vk::BufferUsageFlagBits::eShaderDeviceAddress)
+                                            .setQueueFamilyIndices(renderQueueFamily));
+    auto acMemReq = device.getBufferMemoryRequirements(acBuffer);
+    auto acMem = device.allocateMemory({acMemReq.size, deviceMemoryIndex});
+    device.bindBufferMemory(acBuffer, acMem, 0);
+
+    auto scratchBuffer = device.createBuffer(
+        vk::BufferCreateInfo()
+            .setSize(buildSizes.accelerationStructureSize)
+            .setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress)
+            .setQueueFamilyIndices(renderQueueFamily));
+    auto scratchBufferMemReq = device.getBufferMemoryRequirements(acBuffer);
+    auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex});
+    device.bindBufferMemory(scratchBuffer, scratchBufferMem, 0);
+
+    buildInfo.setScratchData(device.getBufferAddress(scratchBuffer));
+
+    auto blas = device.createAccelerationStructureKHR(vk::AccelerationStructureCreateInfoKHR{}
+                                                          .setBuffer(acBuffer)
+                                                          .setSize(buildSizes.accelerationStructureSize)
+                                                          .setType(vk::AccelerationStructureTypeKHR::eBottomLevel));
+
+    std::vector<vk::AccelerationStructureBuildRangeInfoKHR *> rangeInfos;
+    // auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
+    // .setPrimitiveCount(1)
+    //                      .setFirstVertex(BLASInfo.firstVertex)
+    //                      .setPrimitiveCount(BLASInfo.vertexCount)
+    //                      .setPrimitiveOffset(BLASInfo.vertexOffset);
+
+    {
+        OneTimeCommand ot{device, cmdPool, renderQueue};
+        ot.cmd.buildAccelerationStructuresKHR(buildInfo, rangeInfos);
+    }
+
+    acclerationStructures.push_back({blas, acBuffer, acMem});
+
+    device.destroy(scratchBuffer);
+    device.free(scratchBufferMem);
+    return tga::ext::TopLevelAccelerationStructure{
+        toRawHandle<TgaTopLevelAccelerationStructure>(acclerationStructures.size())};
 }
 
 ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationStructure(
     ext::BottomLevelAccelerationStructureInfo const& BLASInfo)
 {
-    /*
-    1. Get Size info
-    2. Allocate Memory
-    3. Create Host Handle
-    4. Build Structure
-    */
-    // auto buildSize =
-    // device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,{});
+    auto& device = state->device;
+    auto& renderQueue = state->renderQueue;
+    auto& renderQueueFamily = state->renderQueueFamily;
+    auto& cmdPool = state->cmdPool;
+    auto& deviceMemoryIndex = state->deviceMemoryIndex;
+    auto& acclerationStructures = state->acclerationStructures;
 
-    // buildSize.accelerationStructureSize
+    auto& vertexBuffer = state->getData(BLASInfo.vertexBuffer).buffer;
+    auto& indexBuffer = state->getData(BLASInfo.indexBuffer).buffer;
 
-    // vk::AccelerationStructureCreateInfoKHR();
-    // auto test = device.createAccelerationStructureKHR({});
+    // for geometry description
+    auto triangleData = vk::AccelerationStructureGeometryTrianglesDataKHR{}
+                            .setIndexType(vk::IndexType::eUint32)
+                            .setIndexData(device.getBufferAddress(indexBuffer))
+                            .setVertexData(device.getBufferAddress(vertexBuffer))
+                            .setVertexFormat(tgaFormatToVkFormat(BLASInfo.vertexPositionFormat))
+                            .setVertexStride(BLASInfo.vertexStride)
+                            .setMaxVertex(BLASInfo.maxVertex);
 
-    return {};
+    auto geometry = vk::AccelerationStructureGeometryKHR{}
+                        .setGeometryType(vk::GeometryTypeKHR::eTriangles)
+                        .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
+                        .setGeometry(triangleData);
+    auto maxPrimitives = BLASInfo.vertexCount;
+
+    vk::AccelerationStructureBuildGeometryInfoKHR buildInfo;
+    buildInfo.setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
+        .setMode(vk::BuildAccelerationStructureModeKHR::eBuild)
+        .setGeometries(geometry)
+        .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+
+    auto buildSizes = device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
+                                                                   buildInfo, maxPrimitives);
+
+    auto acBuffer = device.createBuffer(vk::BufferCreateInfo()
+                                            .setSize(buildSizes.accelerationStructureSize)
+                                            .setUsage(vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+                                                      vk::BufferUsageFlagBits::eShaderDeviceAddress)
+                                            .setQueueFamilyIndices(renderQueueFamily));
+    auto acMemReq = device.getBufferMemoryRequirements(acBuffer);
+    auto acMem = device.allocateMemory({acMemReq.size, deviceMemoryIndex});
+    device.bindBufferMemory(acBuffer, acMem, 0);
+
+    auto scratchBuffer = device.createBuffer(
+        vk::BufferCreateInfo()
+            .setSize(buildSizes.accelerationStructureSize)
+            .setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress)
+            .setQueueFamilyIndices(renderQueueFamily));
+    auto scratchBufferMemReq = device.getBufferMemoryRequirements(acBuffer);
+    auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex});
+    device.bindBufferMemory(scratchBuffer, scratchBufferMem, 0);
+
+    buildInfo.setScratchData(device.getBufferAddress(scratchBuffer));
+
+    auto blas = device.createAccelerationStructureKHR(vk::AccelerationStructureCreateInfoKHR{}
+                                                          .setBuffer(acBuffer)
+                                                          .setSize(buildSizes.accelerationStructureSize)
+                                                          .setType(vk::AccelerationStructureTypeKHR::eBottomLevel));
+
+    auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
+                         .setFirstVertex(BLASInfo.firstVertex)
+                         .setPrimitiveCount(BLASInfo.vertexCount)
+                         .setPrimitiveOffset(BLASInfo.vertexOffset);
+
+    {
+        OneTimeCommand ot{device, cmdPool, renderQueue};
+        ot.cmd.buildAccelerationStructuresKHR(buildInfo, &rangeInfo);
+    }
+
+    acclerationStructures.push_back({blas, acBuffer, acMem});
+
+    device.destroy(scratchBuffer);
+    device.free(scratchBufferMem);
+    return tga::ext::BottomLevelAccelerationStructure{
+        toRawHandle<TgaBottomLevelAccelerationStructure>(acclerationStructures.size())};
 }
 
-// void Interface::beginCommandBuffer()
-// {
-//     if (currentRecording.cmdBuffer) throw std::runtime_error("[TGA Vulkan] Another Commandbuffer is still
-//     recording!"); currentRecording.cmdBuffer = device.allocateCommandBuffers({cmdPool,
-//     vk::CommandBufferLevel::ePrimary, 1})[0];
-//     currentRecording.cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
-// }
 CommandBuffer Interface::beginCommandBuffer(CommandBuffer cmdBuffer)
 {
     auto& device = state->device;
@@ -1139,7 +1183,7 @@ CommandBuffer Interface::beginCommandBuffer(CommandBuffer cmdBuffer)
     }
     auto& cmdData = state->getData(cmdBuffer);
 
-    std::ignore = device.waitForFences(cmdData.completionFence, true, std::numeric_limits<uint32_t>::max());
+    std::ignore = device.waitForFences(cmdData.completionFence, true, std::numeric_limits<uint64_t>::max());
     device.resetFences(cmdData.completionFence);
     cmdData.cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
 
@@ -1181,9 +1225,67 @@ void Interface::drawIndexedIndirect(CommandBuffer cmdBuffer, Buffer buffer, uint
 {
     state->getData(cmdBuffer).cmdBuffer.drawIndexedIndirect(state->getData(buffer).buffer, offset, drawCount, stride);
 }
+
+void Interface::barrier(CommandBuffer cmdBuffer, PipelineStage srcStage, PipelineStage dstStage)
+{
+    auto tgaToVkStage = [](tga::PipelineStage stage) -> vk::PipelineStageFlagBits {
+        switch (stage) {
+            case tga::PipelineStage::TopOfPipe: return vk::PipelineStageFlagBits::eTopOfPipe;
+            case tga::PipelineStage::DrawIndirect: return vk::PipelineStageFlagBits::eDrawIndirect;
+            case tga::PipelineStage::VertexInput: return vk::PipelineStageFlagBits::eVertexInput;
+            case tga::PipelineStage::VertexShader: return vk::PipelineStageFlagBits::eVertexShader;
+            case tga::PipelineStage::FragmentShader: return vk::PipelineStageFlagBits::eFragmentShader;
+            case tga::PipelineStage::EarlyFragmentTests: return vk::PipelineStageFlagBits::eEarlyFragmentTests;
+            case tga::PipelineStage::LateFragmentTests: return vk::PipelineStageFlagBits::eLateFragmentTests;
+            case tga::PipelineStage::ColorAttachmentOutput: return vk::PipelineStageFlagBits::eColorAttachmentOutput;
+            case tga::PipelineStage::ComputeShader: return vk::PipelineStageFlagBits::eComputeShader;
+            case tga::PipelineStage::Transfer: return vk::PipelineStageFlagBits::eTransfer;
+            case tga::PipelineStage::BottomOfPipe: return vk::PipelineStageFlagBits::eBottomOfPipe;
+            default: return vk::PipelineStageFlagBits::eAllCommands;
+        }
+    };
+    state->getData(cmdBuffer).cmdBuffer.pipelineBarrier(
+        tgaToVkStage(srcStage), tgaToVkStage(dstStage), {},
+        vk::MemoryBarrier(vk::AccessFlagBits::eMemoryWrite,
+                          vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite),
+        {}, {});
+}
+
 void Interface::dispatch(CommandBuffer cmdBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
     state->getData(cmdBuffer).cmdBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
+void Interface::inlineBufferUpdate(CommandBuffer cmdBuffer, Buffer dst, void const *srcData, uint16_t dataSize,
+                                   size_t dstOffset)
+{
+    state->getData(cmdBuffer).cmdBuffer.updateBuffer(state->getData(dst).buffer, dstOffset, dataSize, srcData);
+}
+void Interface::bufferUpload(CommandBuffer cmdBuffer, StagingBuffer src, Buffer dst, size_t size, size_t srcOffset,
+                             size_t dstOffset)
+{
+    auto srcBuffer = state->getData(src).buffer;
+    auto dstBuffer = state->getData(dst).buffer;
+    state->getData(cmdBuffer).cmdBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(srcOffset, dstOffset, size));
+}
+void Interface::bufferDownload(CommandBuffer cmdBuffer, Buffer src, StagingBuffer dst, size_t size, size_t srcOffset,
+                               size_t dstOffset)
+{
+    auto srcBuffer = state->getData(src).buffer;
+    auto dstBuffer = state->getData(dst).buffer;
+    state->getData(cmdBuffer).cmdBuffer.copyBuffer(srcBuffer, dstBuffer, vk::BufferCopy(srcOffset, dstOffset, size));
+}
+
+void Interface::textureDownload(CommandBuffer cmdBuffer, Texture src, StagingBuffer dst, size_t dstOffset)
+{
+    auto& imageData = state->getData(src);
+    auto dstBuffer = state->getData(dst).buffer;
+    state->getData(cmdBuffer).cmdBuffer.copyImageToBuffer(
+        imageData.image, vk::ImageLayout::eGeneral, dstBuffer,
+        vk::BufferImageCopy(dstOffset)
+            .setImageExtent(imageData.extent)
+            .setImageSubresource(
+                {vk::ImageAspectFlagBits::eColor, VK_REMAINING_MIP_LEVELS, VK_REMAINING_ARRAY_LAYERS}));
 }
 
 void Interface::setRenderPass(CommandBuffer cmdBuffer, RenderPass renderPass, uint32_t framebufferIndex)
@@ -1235,61 +1337,15 @@ void Interface::execute(CommandBuffer cmdBuffer)
     state->renderQueue.submit(vk::SubmitInfo().setCommandBuffers(cmdData.cmdBuffer), cmdData.completionFence);
 }
 
+void Interface::waitForCompletion(CommandBuffer cmdBuffer)
+{
+    auto& device = state->device;
+    auto& cmdData = state->getData(cmdBuffer);
 
-void* Interface::getMapping(StagingBuffer stagingBuffer){
-    return state->getData(stagingBuffer).mapping;
+    std::ignore = device.waitForFences(cmdData.completionFence, true, std::numeric_limits<uint64_t>::max());
 }
 
-// void Interface::updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset)
-// {
-//     auto& handle = buffers[buffer];
-//     fillBuffer(dataSize, data, offset, handle.buffer);
-// }
-
-// std::vector<uint8_t> Interface::readback(Buffer buffer)
-// {
-//     auto& handle = buffers[buffer];
-//     std::vector<uint8_t> rbBuffer{};
-//     rbBuffer.resize(handle.size);
-
-//     auto staging = allocateBuffer(handle.size, vk::BufferUsageFlagBits::eTransferDst,
-//                                   vk::MemoryPropertyFlagBits::eHostVisible |
-//                                   vk::MemoryPropertyFlagBits::eHostCoherent);
-
-//     auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
-//     vk::BufferCopy region{0, 0, handle.size};
-//     copyCmdBuffer.copyBuffer(handle.buffer, staging.buffer, {region});
-//     endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, renderQueue);
-//     auto mapping = device.mapMemory(staging.memory, 0, handle.size, {});
-//     std::memcpy(rbBuffer.data(), mapping, handle.size);
-//     device.unmapMemory(staging.memory);
-//     device.destroy(staging.buffer);
-//     device.free(staging.memory);
-//     return rbBuffer;
-// }
-
-// std::vector<uint8_t> Interface::readback(Texture texture)
-// {
-//     auto& handle = textures[texture];
-//     auto mr = device.getImageMemoryRequirements(handle.image);
-//     std::vector<uint8_t> rbBuffer{};
-//     rbBuffer.resize(mr.size);
-
-//     auto staging = allocateBuffer(mr.size, vk::BufferUsageFlagBits::eTransferDst,
-//                                   vk::MemoryPropertyFlagBits::eHostVisible |
-//                                   vk::MemoryPropertyFlagBits::eHostCoherent);
-
-//     auto copyCmdBuffer = beginOneTimeCmdBuffer(cmdPool);
-//     transitionImageLayout(copyCmdBuffer, handle.image, vk::ImageLayout::eGeneral,
-//     vk::ImageLayout::eTransferSrcOptimal); vk::BufferImageCopy region{0, 0, 0, {vk::ImageAspectFlagBits::eColor, 0,
-//     0, 1}, {}, handle.extent}; copyCmdBuffer.copyImageToBuffer(handle.image, vk::ImageLayout::eTransferSrcOptimal,
-//     staging.buffer, {region}); transitionImageLayout(copyCmdBuffer, handle.image,
-//     vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eGeneral); endOneTimeCmdBuffer(copyCmdBuffer, cmdPool,
-//     renderQueue); auto mapping = device.mapMemory(staging.memory, 0, mr.size, {}); std::memcpy(rbBuffer.data(),
-//     mapping, mr.size); device.unmapMemory(staging.memory); device.destroy(staging.buffer);
-//     device.free(staging.memory);
-//     return rbBuffer;
-// }
+void *Interface::getMapping(StagingBuffer stagingBuffer) { return state->getData(stagingBuffer).mapping; }
 
 uint32_t Interface::backbufferCount(Window window)
 {
@@ -1337,22 +1393,6 @@ void Interface::present(Window window, uint32_t imageIndex)
                                              .setWaitSemaphores(windowData.renderCompletedSignals[renderSignal])
                                              .setImageIndices(imageIndex));
     if (result != vk::Result::eSuccess) std::cerr << "[TGA Vulkan] Warning: Window Surface has become suboptimal\n";
-    // auto& handle = wsi.getWindow(window);
-    // auto current = handle.currentFrameIndex;
-    // auto cmdBuffer = beginOneTimeCmdBuffer(cmdPool);
-    // transitionImageLayout(cmdBuffer, handle.images[current], vk::ImageLayout::eColorAttachmentOptimal,
-    //                       vk::ImageLayout::ePresentSrcKHR);
-    // cmdBuffer.end();
-    // vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-    // renderQueue.submit(
-    //     {{1, &handle.imageAvailableSemaphore, waitStages, 1, &cmdBuffer, 1, &handle.renderFinishedSemaphore}}, {});
-    // wsi.presentImage(window, renderQueue);
-    // renderQueue.waitIdle();
-    // device.freeCommandBuffers(cmdPool, 1, &cmdBuffer);
-    // cmdBuffer = beginOneTimeCmdBuffer(cmdPool);
-    // transitionImageLayout(cmdBuffer, handle.images[current], vk::ImageLayout::ePresentSrcKHR,
-    //                       vk::ImageLayout::eColorAttachmentOptimal);
-    // endOneTimeCmdBuffer(cmdBuffer, cmdPool, renderQueue);
 }
 
 void Interface::setWindowTitle(Window window, const std::string& title)
@@ -1496,235 +1536,25 @@ void Interface::free(CommandBuffer commandBuffer)
     data = {};
 }
 
-// vkData::Buffer allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage,
-//                                                         vk::MemoryPropertyFlags properties)
-// {
-//     // TODO use VMA
-//     vk::Buffer buffer = device.createBuffer({{}, size, usage, vk::SharingMode::eExclusive, 1, &renderQueueFamily});
-//     auto mr = device.getBufferMemoryRequirements(buffer);
-//     vk::DeviceMemory memory = device.allocateMemory({mr.size, findMemoryType(mr.memoryTypeBits, properties)});
-//     device.bindBufferMemory(buffer, memory, 0);
-//     return {buffer, memory, usage, size};
-// }
-
-// vk::Format findDepthFormat()
-// {
-//     std::array<vk::Format, 3> candidates{vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint,
-//                                          vk::Format::eD24UnormS8Uint};
-//     vk::FormatFeatureFlags features = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
-//     for (auto format : candidates) {
-//         auto props = pDevice.getFormatProperties(format);
-//         if ((props.optimalTilingFeatures & features) == features) return format;
-//     }
-//     throw std::runtime_error("[TGA Vulkan] Required Depth Format not present on this system");
-// }
-
-// vkData::DepthBuffer createDepthBuffer(uint32_t width, uint32_t height)
-// {
-//     static vk::Format depthFormat = findDepthFormat();
-//     vk::Image image = device.createImage({{},
-//                                           vk::ImageType::e2D,
-//                                           depthFormat,
-//                                           {width, height, 1},
-//                                           1,
-//                                           1,
-//                                           vk::SampleCountFlagBits::e1,
-//                                           vk::ImageTiling::eOptimal,
-//                                           vk::ImageUsageFlagBits::eDepthStencilAttachment,
-//                                           vk::SharingMode::eExclusive});
-//     auto mr = device.getImageMemoryRequirements(image);
-//     vk::DeviceMemory memory =
-//         device.allocateMemory({mr.size, findMemoryType(mr.memoryTypeBits,
-//         vk::MemoryPropertyFlagBits::eDeviceLocal)});
-//     device.bindImageMemory(image, memory, 0);
-//     vk::ImageView view = device.createImageView(
-//         {{}, image, vk::ImageViewType::e2D, depthFormat, {}, {vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1}});
-//     auto transitionCmdBuffer = beginOneTimeCmdBuffer(cmdPool);
-//     transitionImageLayout(transitionCmdBuffer, image, vk::ImageLayout::eUndefined,
-//                           vk::ImageLayout::eDepthStencilAttachmentOptimal);
-//     endOneTimeCmdBuffer(transitionCmdBuffer, cmdPool, renderQueue);
-//     return {image, view, memory};
-// }
-
-// vk::RenderPass makeRenderPass(std::vector<vk::Format> const& colorFormats, ClearOperation clearOps,
-//                               vk::ImageLayout layout)
-// {
-//     auto colorLoadOp = vk::AttachmentLoadOp::eLoad;
-//     auto depthLoadOp = vk::AttachmentLoadOp::eLoad;
-//     if (clearOps == ClearOperation::all || clearOps == ClearOperation::color)
-//         colorLoadOp = vk::AttachmentLoadOp::eClear;
-//     if (clearOps == ClearOperation::all || clearOps == ClearOperation::depth)
-//         depthLoadOp = vk::AttachmentLoadOp::eClear;
-
-//     std::vector<vk::AttachmentDescription> attachments;
-//     attachments.reserve(colorFormats.size());
-
-//     for (auto colorFormat : colorFormats) {
-//         vk::AttachmentDescription()
-//             .setFormat(colorFormat)
-//             .setLoadOp(colorLoadOp)
-//             .setStoreOp(vk::AttachmentStoreOp::eStore)
-//             .setInitialLayout(layout)
-//             .setFinalLayout(layout);
-//         attachments.push_back({{},
-//                                colorFormat,
-//                                vk::SampleCountFlagBits::e1,
-//                                colorLoadOp,
-//                                vk::AttachmentStoreOp::eStore,
-//                                vk::AttachmentLoadOp::eDontCare,
-//                                vk::AttachmentStoreOp::eDontCare,
-//                                layout,
-//                                layout});
-//     }
-//     attachments.push_back({{},
-//                            findDepthFormat(),
-//                            vk::SampleCountFlagBits::e1,
-//                            depthLoadOp,
-//                            vk::AttachmentStoreOp::eStore,
-//                            vk::AttachmentLoadOp::eDontCare,
-//                            vk::AttachmentStoreOp::eDontCare,
-//                            vk::ImageLayout::eDepthStencilAttachmentOptimal,
-//                            vk::ImageLayout::eDepthStencilAttachmentOptimal});
-
-//     std::vector<vk::AttachmentReference> colorAttachmentRefs;
-//     colorAttachmentRefs.reserve(colorFormats.size());
-//     for (size_t i = 0; i < colorFormats.size(); ++i)
-//         colorAttachmentRefs.push_back({static_cast<uint32_t>(i), vk::ImageLayout::eColorAttachmentOptimal});
-//     vk::AttachmentReference depthAttachmentRef{static_cast<uint32_t>(colorAttachmentRefs.size()),
-//                                                vk::ImageLayout::eDepthStencilAttachmentOptimal};
-//     vk::SubpassDescription subpass{{},
-//                                    vk::PipelineBindPoint::eGraphics,
-//                                    0,
-//                                    0,
-//                                    static_cast<uint32_t>(colorAttachmentRefs.size()),
-//                                    colorAttachmentRefs.data(),
-//                                    nullptr,
-//                                    &depthAttachmentRef};
-
-//     vk::PipelineStageFlags pipelineStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-//     vk::SubpassDependency subDependency{
-//         VK_SUBPASS_EXTERNAL, 0,  pipelineStageFlags,
-//         pipelineStageFlags,  {}, vk::AccessFlagBits::eColorAttachmentRead |
-//         vk::AccessFlagBits::eColorAttachmentWrite};
-//     return device.createRenderPass(
-//         {{}, uint32_t(attachments.size()), attachments.data(), 1, &subpass, 1, &subDependency});
-// }
-
-// std::vector<vk::DescriptorSetLayout> decodeInputLayout(const InputLayout& inputLayout)
-// {
-//     std::vector<vk::DescriptorSetLayout> descSetLayouts{};
-//     for (const auto& setLayout : inputLayout.setLayouts) {
-//         std::vector<vk::DescriptorSetLayoutBinding> bindings{};
-//         for (uint32_t i = 0; i < setLayout.bindingLayouts.size(); i++) {
-//             bindings.emplace_back(
-//                 vk::DescriptorSetLayoutBinding{i, determineDescriptorType(setLayout.bindingLayouts[i].type),
-//                                                setLayout.bindingLayouts[i].count, vk::ShaderStageFlagBits::eAll});
-//         }
-//         descSetLayouts.emplace_back(device.createDescriptorSetLayout({{}, uint32_t(bindings.size()),
-//         bindings.data()}));
-//     }
-//     return descSetLayouts;
-// }
-
-// std::pair<vk::Pipeline, vk::PipelineBindPoint> makePipeline(const RenderPassInfo& renderPassInfo,
-//                                                             vk::PipelineLayout pipelineLayout,
-//                                                             vk::RenderPass renderPass)
-// {
-//     bool isValid = renderPassInfo.shaderStages.size() > 0;
-//     bool vertexPresent{false};
-//     bool fragmentPresent{false};
-//     for (auto stage : renderPassInfo.shaderStages) {
-//         const auto& shader = shaders[stage];
-//         if (shader.type == ShaderType::compute) {
-//             if (renderPassInfo.shaderStages.size() == 1) {
-//                 return {
-//                     device
-//                         .createComputePipeline(
-//                             {}, {{}, {{}, vk::ShaderStageFlagBits::eCompute, shader.module, "main"}, pipelineLayout})
-//                         .value,
-//                     vk::PipelineBindPoint::eCompute};
-//             } else {
-//                 isValid = false;
-//                 break;
-//             }
-//         } else if (shader.type == ShaderType::vertex) {
-//             isValid = isValid && !fragmentPresent && !vertexPresent;
-//             vertexPresent = true;
-//         } else if (shader.type == ShaderType::fragment) {
-//             isValid = isValid && !fragmentPresent && vertexPresent;
-//             fragmentPresent = true;
-//         } else {
-//             isValid = false;
-//             break;
-//         }
-//     }
-//     if (!isValid) throw std::runtime_error("[TGA Vulkan] Invalid Shader Stage Configuration");
-//     return {makeGraphicsPipeline(renderPassInfo, pipelineLayout, renderPass), vk::PipelineBindPoint::eGraphics};
-// }
-
-// vk::CommandBuffer beginOneTimeCmdBuffer(vk::CommandPool& cmdPool)
-// {
-//     vk::CommandBuffer cmdBuffer = device.allocateCommandBuffers({cmdPool, vk::CommandBufferLevel::ePrimary, 1})[0];
-//     cmdBuffer.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-//     return cmdBuffer;
-// }
-// void endOneTimeCmdBuffer(vk::CommandBuffer& cmdBuffer, vk::CommandPool& cmdPool, vk::Queue& submitQueue)
-// {
-//     cmdBuffer.end();
-//     submitQueue.submit({{0, nullptr, nullptr, 1, &cmdBuffer}}, {});
-//     submitQueue.waitIdle();
-//     device.freeCommandBuffers(cmdPool, 1, &cmdBuffer);
-// }
-
-// void fillBuffer(size_t size, const uint8_t *data, uint32_t offset, vk::Buffer target)
-// {
-//     auto copyCmdBuffer = beginOneTimeCmdBuffer(transferCmdPool);
-//     if (size <= 65536 && (size % 4) == 0)  // Quick Path
-//     {
-//         copyCmdBuffer.updateBuffer(target, offset, size, data);
-//         endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, renderQueue);
-//     } else  // Staging Buffer
-//     {
-//         auto buffer =
-//             allocateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc,
-//                            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-//         auto mapping = device.mapMemory(buffer.memory, 0, size, {});
-//         std::memcpy(mapping, data, size);
-//         device.unmapMemory(buffer.memory);
-//         vk::BufferCopy region{0, offset, size};
-//         copyCmdBuffer.copyBuffer(buffer.buffer, target, {region});
-//         endOneTimeCmdBuffer(copyCmdBuffer, transferCmdPool, renderQueue);
-//         device.destroy(buffer.buffer);
-//         device.free(buffer.memory);
-//     }
-// }
-
-// void fillTexture(size_t size, const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target)
-// {
-//     auto buffer = allocateBuffer(size, vk::BufferUsageFlagBits::eTransferSrc,
-//                                  vk::MemoryPropertyFlagBits::eHostVisible |
-//                                  vk::MemoryPropertyFlagBits::eHostCoherent);
-//     auto mapping = device.mapMemory(buffer.memory, 0, size, {});
-//     std::memcpy(mapping, data, size);
-//     device.unmapMemory(buffer.memory);
-
-//     auto uploadCmd = device.allocateCommandBuffers({cmdPool, vk::CommandBufferLevel::ePrimary, 1})[0];
-//     uploadCmd.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-//     uploadCmd.copyBufferToImage(buffer.buffer, target, vk::ImageLayout::eTransferDstOptimal,
-//                                 vk::BufferImageCopy()
-//                                     .setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, layers})
-//                                     .setImageExtent(extent));
-
-//     uploadCmd.end();
-//     auto cmdCompleteSignal = device.createSemaphore({});
-//     renderQueue.submit(vk::SubmitInfo().setCommandBuffers(uploadCmd).setSignalSemaphores(cmdCompleteSignal));
-//     device.waitSemaphores(vk::SemaphoreWaitInfo().setSemaphores(cmdCompleteSignal),
-//                           std::numeric_limits<uint64_t>::max());
-//     device.freeCommandBuffers(cmdPool, 1, &uploadCmd);
-//     device.destroySemaphore(cmdCompleteSignal);
-
-//     device.destroy(buffer.buffer);
-//     device.free(buffer.memory);
-// }
+void Interface::free(ext::TopLevelAccelerationStructure acStructure)
+{
+    auto& device = state->device;
+    auto& data = state->getData(acStructure);
+    if (!data.accelerationStructure) return;
+    device.waitIdle();
+    device.destroyAccelerationStructureKHR(data.accelerationStructure);
+    device.destroy(data.buffer);
+    device.free(data.memory);
+}
+void Interface::free(ext::BottomLevelAccelerationStructure acStructure)
+{
+    auto& device = state->device;
+    auto& data = state->getData(acStructure);
+    if (!data.accelerationStructure) return;
+    device.waitIdle();
+    device.destroyAccelerationStructureKHR(data.accelerationStructure);
+    device.destroy(data.buffer);
+    device.free(data.memory);
+}
 
 }  // namespace tga

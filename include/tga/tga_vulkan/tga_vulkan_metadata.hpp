@@ -90,5 +90,13 @@ namespace vkData
         DepthBuffer depthBuffer{};
     };
 
+    namespace ext{
+        struct AccelerationStructure{
+            vk::AccelerationStructureKHR accelerationStructure;
+            vk::Buffer buffer;
+            vk::DeviceMemory memory;
+        };
+    }
+
 }  // namespace vkData
 }  // namespace tga

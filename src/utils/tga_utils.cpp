@@ -106,7 +106,7 @@ TextureBundle loadTexture(std::string const& filepath, Format format, SamplerMod
     auto staging = tgai.createStagingBuffer({dataSize,data});
     auto texture = tgai.createTexture(
         tga::TextureInfo{static_cast<uint32_t>(width), static_cast<uint32_t>(height), format, samplerMode, addressMode}
-            .setsrcData(staging));
+            .setSrcData(staging));
     tgai.free(staging);
     stbi_image_free(data);
     return {texture, static_cast<uint32_t>(width), static_cast<uint32_t>(height)};

@@ -23,6 +23,7 @@
 
 #include "tga_createInfo_structs.hpp"
 #include "tga_key_codes.hpp"
+#include "tga_pipelinestages.hpp"
 
 namespace tga
 {
@@ -49,10 +50,10 @@ public:
     ext::BottomLevelAccelerationStructure createBottomLevelAccelerationStructure(
         ext::BottomLevelAccelerationStructureInfo const&);
 
-    void execute(CommandBuffer commandBuffer);
+    void execute(CommandBuffer);
+    void waitForCompletion(CommandBuffer);
 
-
-    void* getMapping(StagingBuffer);
+    void *getMapping(StagingBuffer);
 
     // void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset);
     // std::vector<uint8_t> readback(Buffer buffer);
@@ -112,6 +113,8 @@ public:
     void free(RenderPass);
     void free(ComputePass);
     void free(CommandBuffer);
+    void free(ext::TopLevelAccelerationStructure);
+    void free(ext::BottomLevelAccelerationStructure);
 
 private:
     friend struct CommandRecorder;
@@ -128,8 +131,13 @@ private:
     void drawIndirect(CommandBuffer, Buffer indirectDrawBuffer, uint32_t drawCount, size_t offset, uint32_t stride);
     void drawIndexedIndirect(CommandBuffer, Buffer indirectDrawBuffer, uint32_t drawCount, size_t offset,
                              uint32_t stride);
-    void barrier(CommandBuffer);
+    void barrier(CommandBuffer, PipelineStage srcStage, PipelineStage dstStage);
     void dispatch(CommandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+
+    void inlineBufferUpdate(CommandBuffer, Buffer dst, void const *srcData, uint16_t dataSize, size_t dstOffset);
+    void bufferUpload(CommandBuffer, StagingBuffer src, Buffer dst, size_t size, size_t srcOffset, size_t dstOffset);
+    void bufferDownload(CommandBuffer, Buffer src, StagingBuffer dst, size_t size, size_t srcOffset, size_t dstOffset);
+    void textureDownload(CommandBuffer, Texture src, StagingBuffer dst, size_t dstOffset);
     void endCommandBuffer(CommandBuffer);
 
 private:
@@ -197,11 +205,43 @@ public:
         tgai.setComputePass(cmdBuffer, computePass);
         return *this;
     }
+
+    CommandRecorder& barrier(PipelineStage srcStage, PipelineStage dstStage)
+    {
+        tgai.barrier(cmdBuffer, srcStage, dstStage);
+        return *this;
+    }
+
     CommandRecorder& dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
     {
         tgai.dispatch(cmdBuffer, groupCountX, groupCountY, groupCountZ);
         return *this;
     }
+
+    CommandRecorder& inlineBufferUpdate(Buffer dst, void const *srcData, uint16_t dataSize, size_t dstOffset = 0)
+    {
+        tgai.inlineBufferUpdate(cmdBuffer, dst, srcData, dataSize, dstOffset);
+        return *this;
+    }
+    CommandRecorder& bufferUpload(StagingBuffer src, Buffer dst, size_t size, size_t srcOffset = 0,
+                                  size_t dstOffset = 0)
+    {
+        tgai.bufferUpload(cmdBuffer, src, dst, size, srcOffset, dstOffset);
+        return *this;
+    }
+    CommandRecorder& bufferDownload(Buffer src, StagingBuffer dst, size_t size, size_t srcOffset = 0,
+                                    size_t dstOffset = 0)
+    {
+        tgai.bufferDownload(cmdBuffer, src, dst, size, srcOffset, dstOffset);
+        return *this;
+    }
+
+    CommandRecorder& textureDownload(Texture src, StagingBuffer dst, size_t dstOffset = 0)
+    {
+        tgai.textureDownload(cmdBuffer, src, dst, dstOffset);
+        return *this;
+    }
+
     CommandBuffer endRecording()
     {
         tgai.endCommandBuffer(cmdBuffer);

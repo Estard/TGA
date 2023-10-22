@@ -48,7 +48,7 @@ struct ShaderInfo {
 struct StagingBufferInfo {
     size_t dataSize;     /**<Size of the buffer data in bytes*/
     uint8_t const *data; /**<Data of the Buffer to be uploaded. Alignment requirements are the users responsibility*/
-    StagingBufferInfo(size_t _dataSize, uint8_t const *_data) : dataSize(_dataSize), data(_data) {}
+    StagingBufferInfo(size_t _dataSize, uint8_t const *_data = nullptr) : dataSize(_dataSize), data(_data) {}
     StagingBufferInfo(std::vector<uint8_t> const& _data = std::vector<uint8_t>())
         : dataSize(_data.size()), data(_data.data())
     {}
@@ -133,8 +133,8 @@ struct TextureInfo {
     TGA_SETTER(setAddressMode, AddressMode, addressMode)
     TGA_SETTER(setTextureType, TextureType, textureType)
     TGA_SETTER(setDepthLayers, uint32_t, depthLayers)
-    TGA_SETTER(setsrcData, StagingBuffer, srcData)
-    TGA_SETTER(setsrcDataOffset, size_t, srcDataOffset)
+    TGA_SETTER(setSrcData, StagingBuffer, srcData)
+    TGA_SETTER(setSrcDataOffset, size_t, srcDataOffset)
 };
 
 /* Window
@@ -391,24 +391,21 @@ namespace ext
     struct BottomLevelAccelerationStructureInfo {
         Buffer vertexBuffer;
         Buffer indexBuffer;
-        Buffer transformBuffer;
         size_t vertexStride;
         Format vertexPositionFormat;
-        uint32_t indexCount;
-        uint32_t firstIndex;
+        uint32_t maxVertex;
+        uint32_t vertexCount;
+        uint32_t firstVertex;
         uint32_t vertexOffset;
-        uint32_t transformOffset;
     };
 
-    struct TopLevelAccelerationStructureInstanceInfo {
+    struct AccelerationStructureInstanceInfo {
         BottomLevelAccelerationStructure blas;
-        struct Transform {
-        } transform;
-        CullMode faceCulling;
+        std::array<std::array<float, 4>, 3> transform;
     };
 
     struct TopLevelAccelerationStructureInfo {
-        std::vector<TopLevelAccelerationStructureInstanceInfo> instanceInfos;
+        std::vector<AccelerationStructureInstanceInfo> instanceInfos;
     };
 }  // namespace ext
 

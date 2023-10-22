@@ -5,7 +5,12 @@
     CameraController::CameraController(tga::Interface& _tgai, tga::Window _window, 
         float _fov,float _aspectRatio, float _nearPlane, float _farPlane,
         glm::vec3 _position, glm::vec3 _front, glm::vec3 _up):
-            tgai(_tgai),window(_window),fov(_fov),aspectRatio(_aspectRatio),
+            tgai(_tgai),window(_window),
+            camStaging(tgai.createStagingBuffer({sizeof(*camData)})),
+            camMetaStaging(tgai.createStagingBuffer({sizeof(*camMetaData)})),
+            camData(static_cast<CamData*>(tgai.getMapping(camStaging))),
+            camMetaData(static_cast<CamMetaData*>(tgai.getMapping(camMetaStaging))),
+            fov(_fov),aspectRatio(_aspectRatio),
             nearPlane(_nearPlane),farPlane(_farPlane),
             position(_position),front(_front),up(_up),right(glm::cross(up,front))
         {
@@ -19,13 +24,13 @@
 
     }
 
-    CamData& CameraController::Data() 
+    tga::StagingBuffer& CameraController::Data() 
     {
-        return camData;
+        return camStaging;
     }
-    CamMetaData& CameraController::MetaData() 
+    tga::StagingBuffer& CameraController::MetaData() 
     {
-        return camMetaData;
+        return camMetaStaging;
     }
     glm::vec3& CameraController::Position()
     {
@@ -79,11 +84,11 @@
         camData.projection = glm::perspective(glm::radians(fov),aspectRatio,nearPlane,farPlane);
         camData.projection[1][1] *= -1;
         */
-        camData.projection = glm::perspective_vk(glm::radians(fov),aspectRatio,nearPlane,farPlane);
-        camData.view = glm::lookAt(position,position+lookDir,up);
+        camData->projection = glm::perspective_vk(glm::radians(fov),aspectRatio,nearPlane,farPlane);
+        camData->view = glm::lookAt(position,position+lookDir,up);
 
-        camMetaData.position = position;
-        camMetaData.lookDirection = lookDir;
-        camMetaData.fovNearFar = glm::vec3(fov,nearPlane,farPlane);
+        camMetaData->position = position;
+        camMetaData->lookDirection = lookDir;
+        camMetaData->fovNearFar = glm::vec3(fov,nearPlane,farPlane);
     }
     

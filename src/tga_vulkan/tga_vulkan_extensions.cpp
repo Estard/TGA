@@ -89,7 +89,7 @@ namespace tga
             !pfn_vkGetAccelerationStructureBuildSizesKHR ||
             !pfn_vkCmdBuildAccelerationStructuresKHR
         )
-        std::cerr << "Function addresses for acceleration structures could not be loaded\n";
+        std::cerr << "Ray Tracing not available\n";
     }
 
 }  // namespace tga

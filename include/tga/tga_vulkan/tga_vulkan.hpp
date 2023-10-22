@@ -54,8 +54,7 @@ struct Interface::InternalState {
     std::vector<vkData::RenderPass> renderPasses;
     std::vector<vkData::ComputePass> computePasses;
     std::vector<vkData::CommandBuffer> commandBuffers;
-    //std::vector<vkData::DepthBuffer> textureDepthBuffers;
-    //std::vector<vkData::DepthBuffer> windowDepthBuffers;
+    std::vector<vkData::ext::AccelerationStructure> acclerationStructures;
 
     vkData::Shader& getData(Shader);
     vkData::Buffer& getData(Buffer);
@@ -66,6 +65,8 @@ struct Interface::InternalState {
     vkData::RenderPass& getData(RenderPass);
     vkData::ComputePass& getData(ComputePass);
     vkData::CommandBuffer& getData(CommandBuffer);
+    vkData::ext::AccelerationStructure& getData(ext::TopLevelAccelerationStructure);
+    vkData::ext::AccelerationStructure& getData(ext::BottomLevelAccelerationStructure);
 
     struct RecordingData {
         vk::CommandBuffer cmdBuffer;

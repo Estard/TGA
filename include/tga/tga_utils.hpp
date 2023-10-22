@@ -89,13 +89,13 @@ void writePNG(std::string const& filename, uint32_t width, uint32_t height, tga:
 template <typename T>
 uint8_t* memoryAccess(T& value)
 {
-    return (uint8_t*)&value;
+    return reinterpret_cast<uint8_t*>(std::addressof(value));
 }
 
 template <typename T>
 uint8_t* memoryAccess(std::vector<T>& vector)
 {
-    return (uint8_t*)vector.data();
+    return reinterpret_cast<uint8_t*>(vector.data());
 }
 
 }  // namespace tga
