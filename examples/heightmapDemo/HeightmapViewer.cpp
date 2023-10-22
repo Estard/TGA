@@ -55,7 +55,7 @@ void HeightmapViewer::createRescources()
 {
     // Create a window
     auto [wx, wy] = tgai.screenResolution();
-    window = tgai.createWindow({wx, wy, tga::PresentMode::vsync});
+    window = tgai.createWindow({wx*9/10, wy*9/10, tga::PresentMode::vsync});
 
     auto hmWidth = heightmapInfo.width;
     auto hmHeight = heightmapInfo.height;
@@ -109,19 +109,15 @@ void HeightmapViewer::createRescources()
     glm::vec3 rotation = {glm::radians(-45.f), glm::radians(0.f), glm::radians(-45 / 2.f)};
     wData.light = glm::vec4(glm::mat3(glm::quat(rotation)) * glm::vec3(0, 0, 1), 1.0);
 
-    std::printf("LightDir: %1.2f %1.2f %1.2f\n", wData.light.x, wData.light.y, wData.light.z);
+    //std::printf("LightDir: %1.2f %1.2f %1.2f\n", wData.light.x, wData.light.y, wData.light.z);
     wData.resolution = glm::vec2(wx, wy);
     tData.gridPoints = glm::ivec2(hmWidth, hmHeight);
-    // tData.terrainScale = wData.front+wData.right+wData.up*glm::min(float(dim[0]),float(dim[1]))/8.f;
-
-    // camController->Position() = glm::vec3(tData.terrainScale*glm::vec3(0.5*dim[0],1.05,0.5*dim[1]));
 
     auto tDataStaging = tgai.createStagingBuffer({sizeof(tData), (uint8_t *)&tData});
     auto wDataStaging = tgai.createStagingBuffer({sizeof(wData), (uint8_t *)&wData});
     tDataUB = tgai.createBuffer({tga::BufferUsage::uniform, sizeof(tData), tDataStaging});
     wDataUB = tgai.createBuffer({tga::BufferUsage::uniform, sizeof(wData), wDataStaging});
 
-    //
     terrainVS = tgai.createShader({tga::ShaderType::vertex, terrainSpvVS.data(), terrainSpvVS.size()});
     terrainFS = tgai.createShader({tga::ShaderType::fragment, terrainSpvFS.data(), terrainSpvFS.size()});
 
@@ -187,6 +183,9 @@ void HeightmapViewer::view()
 
     double deltaTime = 1. / 60.;
 
+    double smoothedDeltaTime = 0;
+    size_t deltaTimeCount = 0;
+
     while (!tgai.windowShouldClose(window)) {
         auto ts = std::chrono::steady_clock::now();
 
@@ -211,10 +210,19 @@ void HeightmapViewer::view()
 
         tgai.execute(cmdBuffer);
         tgai.present(window, nf);
-
         auto tn = std::chrono::steady_clock::now();
         deltaTime = std::chrono::duration<double>(tn - ts).count();
-        std::printf("%3.1f", 1. / deltaTime);
-        std::cout << std::flush << "\b\b\b\b\b";
+
+        smoothedDeltaTime += deltaTime;
+        deltaTimeCount++;
+
+        if(smoothedDeltaTime >= 1.0){
+            auto fps = deltaTimeCount / smoothedDeltaTime;
+            smoothedDeltaTime = 0;
+            deltaTimeCount = 0;
+            std::stringstream windowTitle;
+            windowTitle << "TGA Heightmap Demo (" << fps << " fps)";
+            tgai.setWindowTitle(window,windowTitle.str());
+        }
     }
 }
