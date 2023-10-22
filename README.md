@@ -9,18 +9,13 @@ Building TGA is dependent on the following:
 - [GLFW](https://www.glfw.org/) 
 - [GLM](https://github.com/g-truc/glm) 
 - [stb single-file public domain libraries ](https://github.com/nothings/stb)
+- (optional, tga_utils only)[tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)
 
-GLFW, GLM and stb are included as submodules and are optional to install globally
+GLFW, GLM and stb are included as submodules and are optional to install globally.
 
-Should, after installing the vulkan SDK, simply loading the CMake project not work, try to set up the development environment manually
-- For the dependencies follow the instructions from [vulkan-tutorial.com](https://vulkan-tutorial.com/Development_environment)
-- Add TGA/include to additional includes
-- Add the source file of TGA/src/tga_*api_you_want_use* to your project
-- Add the source file of TGA/src/tga_*api_you_want_use*/WSI_*window_library* to your project
-- If on Windows: Add NOMINMAX to preprocessor defines
+The Vulkan SDK and Vulkan Validation Layers need to be installed manually.
 
-Currently implemented are:
-- Vulkan API using GLFW as window library
+You can link against the cmake targets `tga_vulkan` and optionally `tga_utils`.
 
 ### API Documentation
 
@@ -208,20 +203,17 @@ The handle to a ComputePass is valid until a call to ```Interface::free(ComputeP
 #### CommandBuffer
 A CommandBuffer is a list of instructions to be executed by the GPU.
 
-
 To start recording a CommandBuffer, create an instance of ```tga::CommandRecorder```.
-
 
 A CommandRecorder can be initialized with a previously executed command buffer. In this case, it will wait for completion and then override the command buffer with new commands.
 
-
 A handle to an already valid CommandBuffer can be passed to _beginCommandBuffer_ to clear it and begin recording of a new set of commands.
-Is obtained upon calling ```CommandRecorder::endRecording()```
+Is obtained upon calling ```CommandRecorder::endRecording()```. This function must be called only once. Afterwards the CommandRecorder should be discarded as no new commands are permitted to be recorded afterwards.
 
 
 The following list of commands is available:
 - ```setRenderPass(RenderPass renderPass, uint32_t framebufferIndex)``` Configure the graphics pipeline to use the specified RenderPass targeting the specified framebuffer of RenderPass.renderTarget
-- ```void setComputePass(ComputePass computePass);``` Configure the compute pipeline to use the specified compute shader
+- ```void setComputePass(ComputePass computePass)``` Configure the compute pipeline to use the specified compute shader
 - ```bindVertexBuffer(Buffer buffer)```Use a Buffer as a vertex-buffer
 - ```bindIndexBuffer(Buffer buffer)```Use a Buffer as an index-buffer
 - ```bindInputSet(InputSet inputSet)```Bind all Bindings specified in the InputSet 
