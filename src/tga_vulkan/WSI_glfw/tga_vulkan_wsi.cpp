@@ -23,14 +23,24 @@ namespace /*private*/
     {
         auto presentModes = pDevice.getSurfacePresentModesKHR(surface);
         auto presentMode = vk::PresentModeKHR::eFifo;  // Always available
-        if (wantedPresentMode == PresentMode::immediate) {
-            for (const auto& mode : presentModes) {
-                if (mode == vk::PresentModeKHR::eMailbox) {
-                    return mode;  // Prefer Mailbox over Immediate
-                } else if (mode == vk::PresentModeKHR::eImmediate) {
-                    presentMode = mode;
-                }
+
+        for(auto& mode: presentModes){
+            if(wantedPresentMode == PresentMode::immediate && mode == vk::PresentModeKHR::eImmediate){
+                presentMode = mode;
+                break;
             }
+            if(wantedPresentMode != PresentMode::vsync)
+                continue;
+            
+            // Prefer Mailbox over everything else
+            if(mode == vk::PresentModeKHR::eMailbox){
+                presentMode = mode;
+                break;
+            }
+            // Take the relaxed fifo over regular fifo
+            //if(mode == vk::PresentModeKHR::eFifoRelaxed){
+            //    presentMode = mode;
+            //}
         }
         return presentMode;
     }

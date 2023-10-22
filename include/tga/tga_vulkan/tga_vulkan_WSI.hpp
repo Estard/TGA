@@ -13,9 +13,7 @@ namespace tga
         Window createWindow(const WindowInfo&, vk::Instance&, vk::PhysicalDevice&, vk::Device&, uint32_t queueFamily);
         void setWindowTitle(Window window, const char* title);
         void free(Window window, vk::Instance&, vk::Device&);
-        //uint32_t aquireNextImage(Window window, vk::Device&);
         void pollEvents(Window window);
-        //void presentImage(Window window, vk::Queue&);
 
         bool windowShouldClose(Window window);
 

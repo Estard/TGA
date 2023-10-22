@@ -747,7 +747,7 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
             vk::PipelineStageFlagBits::eTopOfPipe,
             vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, {}, {}, {},
             layoutTransitionBarrier(image, vk::ImageLayout::eUndefined,
-                                    vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal,
+                                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
                                     vk::ImageAspectFlagBits::eDepth));
 
         return {image, view, memory};
@@ -1072,7 +1072,7 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
                                                           .setSize(buildSizes.accelerationStructureSize)
                                                           .setType(vk::AccelerationStructureTypeKHR::eBottomLevel));
 
-    std::vector<vk::AccelerationStructureBuildRangeInfoKHR *> rangeInfos;
+    std::vector<vk::AccelerationStructureBuildRangeInfoKHR const*> rangeInfos;
     // auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
     // .setPrimitiveCount(1)
     //                      .setFirstVertex(BLASInfo.firstVertex)
