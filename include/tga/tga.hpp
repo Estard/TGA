@@ -115,7 +115,8 @@ public:
 private:
     friend struct CommandRecorder;
     CommandBuffer beginCommandBuffer(CommandBuffer cmdBuffer);
-    void setRenderPass(CommandBuffer, RenderPass, uint32_t framebufferIndex);
+    void setRenderPass(CommandBuffer, RenderPass, uint32_t framebufferIndex,
+                       std::array<float, 4> const& colorClearValue, float depthClearValue);
     void setComputePass(CommandBuffer, ComputePass);
     void bindVertexBuffer(CommandBuffer, Buffer);
     void bindIndexBuffer(CommandBuffer, Buffer);
@@ -151,9 +152,10 @@ public:
         if (cmdBuffer) tgai.endCommandBuffer(cmdBuffer);
     }
 
-    CommandRecorder& setRenderPass(RenderPass renderPass, uint32_t framebufferIndex)
+    CommandRecorder& setRenderPass(RenderPass renderPass, uint32_t framebufferIndex,
+                                   std::array<float, 4> const& colorClearValue = {}, float depthClearValue = 1.0f)
     {
-        tgai.setRenderPass(cmdBuffer, renderPass, framebufferIndex);
+        tgai.setRenderPass(cmdBuffer, renderPass, framebufferIndex, colorClearValue, depthClearValue);
         return *this;
     }
     CommandRecorder& bindVertexBuffer(Buffer buffer)
@@ -241,7 +243,9 @@ public:
     CommandBuffer endRecording()
     {
         tgai.endCommandBuffer(cmdBuffer);
-        return cmdBuffer;
+        auto result = cmdBuffer;
+        cmdBuffer = {};
+        return result;
     }
 
 private:

@@ -376,7 +376,8 @@ Interface::~Interface()
     for (size_t i = 0; i < state->renderPasses.size(); ++i) free(toRawHandle<TgaRenderPass>(i + 1));
     for (size_t i = 0; i < state->computePasses.size(); ++i) free(toRawHandle<TgaComputePass>(i + 1));
     for (size_t i = 0; i < state->commandBuffers.size(); ++i) free(toRawHandle<TgaCommandBuffer>(i + 1));
-    for (size_t i = 0; i < state->acclerationStructures.size(); ++i) free(toRawHandle<TgaTopLevelAccelerationStructure>(i + 1));
+    for (size_t i = 0; i < state->acclerationStructures.size(); ++i)
+        free(toRawHandle<TgaTopLevelAccelerationStructure>(i + 1));
 
     while (!wsi.windows.empty()) free(wsi.windows.begin()->first);
 
@@ -1288,7 +1289,8 @@ void Interface::textureDownload(CommandBuffer cmdBuffer, Texture src, StagingBuf
                 {vk::ImageAspectFlagBits::eColor, VK_REMAINING_MIP_LEVELS, VK_REMAINING_ARRAY_LAYERS}));
 }
 
-void Interface::setRenderPass(CommandBuffer cmdBuffer, RenderPass renderPass, uint32_t framebufferIndex)
+void Interface::setRenderPass(CommandBuffer cmdBuffer, RenderPass renderPass, uint32_t framebufferIndex,
+                              std::array<float, 4> const& colorClearValue, float depthClearValue)
 {
     auto& cmdData = state->getData(cmdBuffer);
     auto& renderPassData = state->getData(renderPass);
@@ -1296,8 +1298,8 @@ void Interface::setRenderPass(CommandBuffer cmdBuffer, RenderPass renderPass, ui
     cmdData.currentRenderPass = renderPassData.renderPass;
 
     std::array<vk::ClearValue, 2> clearValues = {
-        vk::ClearColorValue(/*0,0,0,0*/),
-        vk::ClearDepthStencilValue(1.f, 0),
+        vk::ClearColorValue(colorClearValue),
+        vk::ClearDepthStencilValue(depthClearValue, 0),
     };
 
     uint32_t frameIndex = std::min(framebufferIndex, uint32_t(renderPassData.framebuffers.size() - 1));

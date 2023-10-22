@@ -212,7 +212,7 @@ Is obtained upon calling ```CommandRecorder::endRecording()```. This function mu
 
 
 The following list of commands is available:
-- ```setRenderPass(RenderPass renderPass, uint32_t framebufferIndex)``` Configure the graphics pipeline to use the specified RenderPass targeting the specified framebuffer of RenderPass.renderTarget
+- ```setRenderPass(RenderPass renderPass, uint32_t framebufferIndex,std::array<float, 4> const& colorClearValue = {}, float depthClearValue = 1.0f)``` Configure the graphics pipeline to use the specified RenderPass targeting the specified framebuffer of RenderPass.renderTarget. If clear operations are set, corresponding clear values are applied.
 - ```void setComputePass(ComputePass computePass)``` Configure the compute pipeline to use the specified compute shader
 - ```bindVertexBuffer(Buffer buffer)```Use a Buffer as a vertex-buffer
 - ```bindIndexBuffer(Buffer buffer)```Use a Buffer as an index-buffer
