@@ -5,41 +5,34 @@
 int main()
 {
     // Open the interface
-    std::shared_ptr<tga::Interface> tgai = std::make_shared<tga::TGAVulkan>();
+    tga::Interface tgai{};
 
     // Use utility function to load Shader from File
-    tga::Shader vertexShader = tga::loadShader("shaders/triangle_vert.spv",tga::ShaderType::vertex,tgai);
-    tga::Shader fragmentShader = tga::loadShader("shaders/triangle_frag.spv",tga::ShaderType::fragment,tgai);
+    tga::Shader vertexShader = tga::loadShader("../shaders/triangle_vert.spv",tga::ShaderType::vertex,tgai);
+    tga::Shader fragmentShader = tga::loadShader("../shaders/triangle_frag.spv",tga::ShaderType::fragment,tgai);
 
     // Get screen Resolution, use structured bindings to unpack std::pair
-    auto [screenResX, screenResY] = tgai->screenResolution();
+    auto [screenResX, screenResY] = tgai.screenResolution();
 
     // Window with the size of the screen
-    tga::Window window = tgai->createWindow({screenResX,screenResY});
+    tga::Window window = tgai.createWindow({screenResX,screenResY});
 
     // Renderpass using the shaders and rendering to the window
-    tga::RenderPass renderPass = tgai->createRenderPass({{vertexShader,fragmentShader}, window});
+    tga::RenderPass renderPass = tgai.createRenderPass({vertexShader,fragmentShader, window});
 
     // Single CommandBuffer that will be reused every frame
-    tga::CommandBuffer cmdBuffer;
+    tga::CommandBuffer cmdBuffer{};
 
-    while(!tgai->windowShouldClose(window)){
-
-        // Open the CommandBuffer for recording
-        tgai->beginCommandBuffer(cmdBuffer);
-
-        // Configure the pipeline to render to the next backbuffer
-        tgai->setRenderPass(renderPass,tgai->nextFrame(window));
-
-        // The triangle data is procedually drawn in the shader
-        tgai->draw(3,0);
-
-        // Accept the filled CommandBuffer
-        cmdBuffer = tgai->endCommandBuffer();
+    while(!tgai.windowShouldClose(window)){
+        auto nextFrame = tgai.nextFrame(window);
+        cmdBuffer = tga::CommandRecorder{tgai,cmdBuffer}
+        .setRenderPass(renderPass,nextFrame)
+        .draw(3,0)
+        .endRecording();
 
         // Execute commands and show the result
-        tgai->execute(cmdBuffer);
-        tgai->present(window);
+        tgai.execute(cmdBuffer);
+        tgai.present(window, nextFrame);
     }
     return 0;
 }

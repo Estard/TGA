@@ -1,0 +1,29 @@
+#version 450
+
+layout(set = 0, binding = 0) uniform BufferParams{
+    float a;
+    uint size;
+};
+
+layout(set = 0, binding = 1) readonly buffer X{
+    float x[];
+};
+
+layout(set = 0, binding = 2) readonly buffer Y{
+    float y[];
+}; 
+
+layout(set = 0, binding = 3) writeonly buffer Z{
+    float z[];
+}; 
+
+
+layout(local_size_x = 64) in;
+
+void main(){
+    uint id = gl_GlobalInvocationID.x;
+    if(id >= size) return;
+    z[id] = a * x[id] + y[id];
+}
+
+

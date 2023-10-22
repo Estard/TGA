@@ -6,206 +6,25 @@
 
 namespace tga
 {
-    VulkanWSI::VulkanWSI() { glfwInit(); }
-    VulkanWSI::~VulkanWSI() { glfwTerminate(); }
-    void VulkanWSI::setVulkanHandles(vk::Instance _instance, vk::PhysicalDevice _pDevice, vk::Device _device,
-                                     vk::Queue _presentQueue, uint32_t _queueFamiliy)
-    {
-        instance = _instance;
-        pDevice = _pDevice;
-        device = _device;
-        presentQueue = _presentQueue;
-        queueFamiliy = _queueFamiliy;
-    }
+namespace /*private*/
+{
 
-    std::vector<const char *> VulkanWSI::getRequiredExtensions()
-    {
-        uint32_t glfwExtensionCount = 0;
-        const char **glfwExtensions;
-        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        std::vector<const char *> extensions;
-        for (uint32_t i = 0; i < glfwExtensionCount; i++) extensions.push_back(glfwExtensions[i]);
-        return extensions;
-    }
-
-    std::pair<uint32_t, uint32_t> VulkanWSI::screenResolution()
-    {
-        const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-        return {static_cast<uint32_t>(mode->width), static_cast<uint32_t>(mode->height)};
-    }
-
-    Window VulkanWSI::createWindow(const WindowInfo &windowInfo)
-    {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-        int width = int(windowInfo.width);
-        int height = int(windowInfo.height);
-        if (!width || !height) {
-            const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-            width = mode->width;
-            height = mode->height;
-        }
-
-        GLFWwindow *glfwWindow = glfwCreateWindow(width, height, "TGA VULKAN", nullptr, nullptr);
-
-        VkSurfaceKHR vkSurface;
-        if (glfwCreateWindowSurface(instance, glfwWindow, nullptr, &vkSurface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
-        vk::SurfaceKHR surface{vkSurface};
-        if (!pDevice.getSurfaceSupportKHR(queueFamiliy, surface)) {
-            instance.destroy(surface);
-            throw std::runtime_error("Cannot use graphics Queue to present to Window");
-        }
-
-        auto surfaceFormat = chooseSurfaceFormat(surface);
-        auto presentMode = choosePresentMode(surface, windowInfo.presentMode);
-        auto extent = chooseSwapExtent(surface, windowInfo);
-        auto capabilities = pDevice.getSurfaceCapabilitiesKHR(surface);
-        uint32_t imageCount = std::max(windowInfo.framebufferCount, capabilities.minImageCount);
-        if (capabilities.maxImageCount) imageCount = std::min(imageCount, capabilities.maxImageCount);
-
-        auto swapchain = device.createSwapchainKHR({{},
-                                                    surface,
-                                                    imageCount,
-                                                    surfaceFormat.format,
-                                                    surfaceFormat.colorSpace,
-                                                    extent,
-                                                    1,
-                                                    vk::ImageUsageFlagBits::eColorAttachment,
-                                                    vk::SharingMode::eExclusive,
-                                                    1,
-                                                    &queueFamiliy,
-                                                    capabilities.currentTransform,
-                                                    vk::CompositeAlphaFlagBitsKHR::eOpaque,
-                                                    presentMode,
-                                                    VK_TRUE});
-
-        std::vector<vk::Image> images = device.getSwapchainImagesKHR(swapchain);
-        std::vector<vk::ImageView> imageViews{};
-        std::vector<vk::Fence> fences{};
-        std::vector<vk::Semaphore> availabilitySemas{};
-        std::vector<vk::Semaphore> renderSemas{};
-        for (auto image : images) {
-            imageViews.emplace_back(device.createImageView({{},
-                                                            image,
-                                                            vk::ImageViewType::e2D,
-                                                            surfaceFormat.format,
-                                                            {},
-                                                            {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}}));
-            //   fences.emplace_back(device.createFence({{vk::FenceCreateFlagBits::eSignaled}}));
-            //   availabilitySemas.emplace_back(device.createSemaphore({}));
-            //   renderSemas.emplace_back(device.createSemaphore({}));
-        }
-
-        Window_TV window_tv{surface,
-                            swapchain,
-                            extent,
-                            surfaceFormat.format,
-                            images,
-                            imageViews,
-                            glfwWindow,
-                            device.createFence({vk::FenceCreateFlagBits::eSignaled}),
-                            device.createSemaphore({}),
-                            device.createSemaphore({}),
-                            0};
-        Window window = Window(TgaWindow(glfwWindow));
-        windows.emplace(window, window_tv);
-        return window;
-    }
-
-    void VulkanWSI::free(Window window)
-    {
-        auto &handle = windows[window];
-        for (auto &imageView : handle.imageViews) device.destroy(imageView);
-        device.destroy(handle.swapchain);
-        instance.destroy(handle.surface);
-        // for(auto &fence : handle.inFlightFences)
-        device.destroy(handle.inFlightFence);
-        // for(auto &sema: handle.imageAvailableSemaphores)
-        device.destroy(handle.imageAvailableSemaphore);
-        //  for(auto &sema: handle.renderFinishedSemaphores)
-        device.destroy(handle.renderFinishedSemaphore);
-
-        glfwDestroyWindow(std::any_cast<GLFWwindow *>(handle.nativeHandle));
-        windows.erase(window);
-    }
-    void VulkanWSI::setWindowTitle(Window window, const char *title)
-    {
-        auto &handle = getWindow(window);
-        glfwSetWindowTitle(std::any_cast<GLFWwindow *>(handle.nativeHandle), title);
-    }
-
-    Window_TV &VulkanWSI::getWindow(Window window) { return windows[window]; }
-
-    uint32_t VulkanWSI::aquireNextImage(Window window)
-    {
-        glfwPollEvents();
-        auto &handle = windows[window];
-        auto nextFrame = device.acquireNextImageKHR(handle.swapchain, std::numeric_limits<uint32_t>::max(),
-                                                    handle.imageAvailableSemaphore, vk::Fence());
-        handle.currentFrameIndex = nextFrame.value;
-        return handle.currentFrameIndex;
-    }
-
-    void VulkanWSI::pollEvents(Window window)
-    {
-        glfwPollEvents();
-        (void)window;  // Silence compiler warning
-    }
-
-    void VulkanWSI::presentImage(Window window)
-    {
-        auto &handle = windows[window];
-        auto res = presentQueue.presentKHR(
-            {1, &handle.renderFinishedSemaphore, 1, &handle.swapchain, &handle.currentFrameIndex});
-        if (res != vk::Result::eSuccess) std::cerr << "[TGA Vulkan] Warning: Window Surface has become suboptimal\n";
-    }
-
-    bool VulkanWSI::windowShouldClose(Window window)
-    {
-        auto &handle = windows[window];
-        return glfwWindowShouldClose(std::any_cast<GLFWwindow *>(handle.nativeHandle));
-    }
-
-    int toGlfwKey(Key key);
-    bool VulkanWSI::keyDown(Window window, Key key)
-    {
-        auto &handle = windows[window];
-        GLFWwindow *glfwWin = std::any_cast<GLFWwindow *>(handle.nativeHandle);
-        if (key == Key::MouseLeft) return glfwGetMouseButton(glfwWin, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-        if (key == Key::MouseMiddle) return glfwGetMouseButton(glfwWin, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
-        if (key == Key::MouseRight) return glfwGetMouseButton(glfwWin, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-        auto glfwKey = toGlfwKey(key);
-        return glfwGetKey(glfwWin, glfwKey) == GLFW_PRESS;
-    }
-
-    std::pair<int, int> VulkanWSI::mousePosition(Window window)
-    {
-        auto &handle = windows[window];
-        GLFWwindow *glfwWin = std::any_cast<GLFWwindow *>(handle.nativeHandle);
-        double xpos = 0;
-        double ypos = 0;
-        glfwGetCursorPos(glfwWin, &xpos, &ypos);
-        return {int(xpos), int(ypos)};
-    }
-
-    vk::SurfaceFormatKHR VulkanWSI::chooseSurfaceFormat(vk::SurfaceKHR surface)
+    vk::SurfaceFormatKHR chooseSurfaceFormat(vk::SurfaceKHR surface, vk::PhysicalDevice& pDevice)
     {
         auto formats = pDevice.getSurfaceFormatsKHR(surface);
-        for (const auto &format : formats) {
+        for (const auto& format : formats) {
             if (format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear)
                 return format;
         }
         return formats[0];
     }
-    vk::PresentModeKHR VulkanWSI::choosePresentMode(vk::SurfaceKHR surface, PresentMode wantedPresentMode)
+    vk::PresentModeKHR choosePresentMode(vk::SurfaceKHR surface, PresentMode wantedPresentMode,
+                                         vk::PhysicalDevice& pDevice)
     {
         auto presentModes = pDevice.getSurfacePresentModesKHR(surface);
         auto presentMode = vk::PresentModeKHR::eFifo;  // Always available
         if (wantedPresentMode == PresentMode::immediate) {
-            for (const auto &mode : presentModes) {
+            for (const auto& mode : presentModes) {
                 if (mode == vk::PresentModeKHR::eMailbox) {
                     return mode;  // Prefer Mailbox over Immediate
                 } else if (mode == vk::PresentModeKHR::eImmediate) {
@@ -215,7 +34,7 @@ namespace tga
         }
         return presentMode;
     }
-    vk::Extent2D VulkanWSI::chooseSwapExtent(vk::SurfaceKHR surface, const WindowInfo &windowInfo)
+    vk::Extent2D chooseSwapExtent(vk::SurfaceKHR surface, const WindowInfo& windowInfo, vk::PhysicalDevice& pDevice)
     {
         auto capabilities = pDevice.getSurfaceCapabilitiesKHR(surface);
         if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) return capabilities.currentExtent;
@@ -349,4 +168,173 @@ namespace tga
             default: return GLFW_KEY_UNKNOWN;
         }
     }
+}  // namespace
+
+VulkanWSI::VulkanWSI() { glfwInit(); }
+VulkanWSI::~VulkanWSI() { glfwTerminate(); }
+
+std::vector<const char *> VulkanWSI::getRequiredExtensions() const
+{
+    uint32_t glfwExtensionCount = 0;
+    const char **glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    std::vector<const char *> extensions;
+    for (uint32_t i = 0; i < glfwExtensionCount; i++) extensions.push_back(glfwExtensions[i]);
+    return extensions;
+}
+
+std::pair<uint32_t, uint32_t> VulkanWSI::screenResolution() const
+{
+    const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    return {static_cast<uint32_t>(mode->width), static_cast<uint32_t>(mode->height)};
+}
+
+Window VulkanWSI::createWindow(const WindowInfo& windowInfo, vk::Instance& instance, vk::PhysicalDevice& pDevice,
+                               vk::Device& device, uint32_t queueFamily)
+{
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    int width = int(windowInfo.width);
+    int height = int(windowInfo.height);
+    if (!width || !height) {
+        const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+        width = mode->width;
+        height = mode->height;
+    }
+
+    GLFWwindow *glfwWindow = glfwCreateWindow(width, height, "TGA VULKAN", nullptr, nullptr);
+
+    VkSurfaceKHR vkSurface;
+    if (glfwCreateWindowSurface(instance, glfwWindow, nullptr, &vkSurface) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create window surface!");
+    }
+    vk::SurfaceKHR surface{vkSurface};
+    if (!pDevice.getSurfaceSupportKHR(queueFamily, surface)) {
+        instance.destroy(surface);
+        throw std::runtime_error("GPU has no support to make a drawable surface");
+    }
+
+    auto surfaceFormat = chooseSurfaceFormat(surface, pDevice);
+    auto presentMode = choosePresentMode(surface, windowInfo.presentMode, pDevice);
+    auto extent = chooseSwapExtent(surface, windowInfo, pDevice);
+    auto capabilities = pDevice.getSurfaceCapabilitiesKHR(surface);
+    uint32_t imageCount = std::max(windowInfo.framebufferCount, capabilities.minImageCount);
+    if (capabilities.maxImageCount) imageCount = std::min(imageCount, capabilities.maxImageCount);
+
+    auto swapchain = device.createSwapchainKHR({{},
+                                                surface,
+                                                imageCount,
+                                                surfaceFormat.format,
+                                                surfaceFormat.colorSpace,
+                                                extent,
+                                                1,
+                                                vk::ImageUsageFlagBits::eColorAttachment,
+                                                vk::SharingMode::eExclusive,
+                                                1,
+                                                &queueFamily,
+                                                capabilities.currentTransform,
+                                                vk::CompositeAlphaFlagBitsKHR::eOpaque,
+                                                presentMode,
+                                                VK_TRUE});
+
+    std::vector<vk::Image> images = device.getSwapchainImagesKHR(swapchain);
+    std::vector<vk::ImageView> imageViews{};
+    std::vector<vk::Fence> fences{};
+    std::vector<vk::Semaphore> availabilitySemas{};
+    std::vector<vk::Semaphore> renderSemas{};
+    for (auto image : images) {
+        imageViews.emplace_back(device.createImageView({{},
+                                                        image,
+                                                        vk::ImageViewType::e2D,
+                                                        surfaceFormat.format,
+                                                        {},
+                                                        {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}}));
+        //   fences.emplace_back(device.createFence({{vk::FenceCreateFlagBits::eSignaled}}));
+        //   availabilitySemas.emplace_back(device.createSemaphore({}));
+        //   renderSemas.emplace_back(device.createSemaphore({}));
+    }
+
+    vkData::Window window_tv{surface, swapchain, extent, surfaceFormat.format, glfwWindow, images, imageViews};
+    Window window = Window(TgaWindow(glfwWindow));
+    windows.emplace(window, window_tv);
+    return window;
+}
+
+void VulkanWSI::free(Window window, vk::Instance& instance, vk::Device& device)
+{
+    auto& handle = windows[window];
+    for (auto& imageView : handle.imageViews) device.destroy(imageView);
+    device.destroy(handle.swapchain);
+    instance.destroy(handle.surface);
+    // for(auto &fence : handle.inFlightFences)
+    // device.destroy(handle.inFlightFence);
+    for (auto& signal : handle.imageAcquiredSignals) {
+        device.destroy(signal);
+    }
+
+    for (auto& signal : handle.renderCompletedSignals) {
+        device.destroy(signal);
+    }
+    // device.destroy(handle.imageAvailableSemaphore);
+    //   for(auto &sema: handle.renderFinishedSemaphores)
+    // device.destroy(handle.renderFinishedSemaphore);
+
+    glfwDestroyWindow(std::any_cast<GLFWwindow *>(handle.nativeHandle));
+    windows.erase(window);
+}
+void VulkanWSI::setWindowTitle(Window window, const char *title)
+{
+    auto& handle = getWindow(window);
+    glfwSetWindowTitle(std::any_cast<GLFWwindow *>(handle.nativeHandle), title);
+}
+
+vkData::Window& VulkanWSI::getWindow(Window window) { return windows[window]; }
+
+// uint32_t VulkanWSI::aquireNextImage(Window window, vk::Device& device)
+// {
+//     glfwPollEvents();
+//     auto& handle = windows[window];
+//     auto nextFrame = device.acquireNextImageKHR(handle.swapchain, std::numeric_limits<uint32_t>::max(),
+//                                                 handle.imageAvailableSemaphore, vk::Fence());
+//     handle.currentFrameIndex = nextFrame.value;
+//     return handle.currentFrameIndex;
+// }
+
+void VulkanWSI::pollEvents(Window) { glfwPollEvents(); }
+
+// void VulkanWSI::presentImage(Window window, vk::Queue& presentQueue)
+// {
+//     auto& handle = windows[window];
+//     auto res =
+//         presentQueue.presentKHR({1, &handle.renderFinishedSemaphore, 1, &handle.swapchain, &handle.currentFrameIndex});
+//     if (res != vk::Result::eSuccess) std::cerr << "[TGA Vulkan] Warning: Window Surface has become suboptimal\n";
+// }
+
+bool VulkanWSI::windowShouldClose(Window window)
+{
+    auto& handle = windows[window];
+    return glfwWindowShouldClose(std::any_cast<GLFWwindow *>(handle.nativeHandle));
+}
+
+bool VulkanWSI::keyDown(Window window, Key key)
+{
+    auto& handle = windows[window];
+    GLFWwindow *glfwWin = std::any_cast<GLFWwindow *>(handle.nativeHandle);
+    if (key == Key::MouseLeft) return glfwGetMouseButton(glfwWin, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    if (key == Key::MouseMiddle) return glfwGetMouseButton(glfwWin, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+    if (key == Key::MouseRight) return glfwGetMouseButton(glfwWin, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    auto glfwKey = toGlfwKey(key);
+    return glfwGetKey(glfwWin, glfwKey) == GLFW_PRESS;
+}
+
+std::pair<int, int> VulkanWSI::mousePosition(Window window)
+{
+    auto& handle = windows[window];
+    GLFWwindow *glfwWin = std::any_cast<GLFWwindow *>(handle.nativeHandle);
+    double xpos = 0;
+    double ypos = 0;
+    glfwGetCursorPos(glfwWin, &xpos, &ypos);
+    return {int(xpos), int(ypos)};
+}
 }  // namespace tga

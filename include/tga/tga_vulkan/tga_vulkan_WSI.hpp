@@ -1,60 +1,33 @@
 #pragma once
-#include "tga/tga_WSI.hpp"
 #include "tga/tga_hash.hpp"
-#include "vulkan/vulkan.hpp"
+#include "tga/tga_vulkan/tga_vulkan_metadata.hpp"
 
 namespace tga
 {
-    struct Window_TV {
-        vk::SurfaceKHR surface;
-        vk::SwapchainKHR swapchain;
-        vk::Extent2D extent;
-        vk::Format format;
-        std::vector<vk::Image> images;
-        std::vector<vk::ImageView> imageViews;
-        std::any nativeHandle;
-        vk::Fence inFlightFence;
-        vk::Semaphore imageAvailableSemaphore;
-        vk::Semaphore renderFinishedSemaphore;
-        uint32_t currentFrameIndex;
-    };
+    struct VulkanWSI {
 
-    class VulkanWSI : public WSI {
-    public:
         VulkanWSI();
         ~VulkanWSI();
-        Window createWindow(const WindowInfo& windowInfo) override;
-        void setWindowTitle(Window window, const char* title) override;
-        void free(Window window) override;
-        uint32_t aquireNextImage(Window window) override;
-        void pollEvents(Window window) override;
-        void presentImage(Window window) override;
 
-        bool windowShouldClose(Window window) override;
+        std::vector<const char*> getRequiredExtensions() const;
+        Window createWindow(const WindowInfo&, vk::Instance&, vk::PhysicalDevice&, vk::Device&, uint32_t queueFamily);
+        void setWindowTitle(Window window, const char* title);
+        void free(Window window, vk::Instance&, vk::Device&);
+        //uint32_t aquireNextImage(Window window, vk::Device&);
+        void pollEvents(Window window);
+        //void presentImage(Window window, vk::Queue&);
 
-        void setVulkanHandles(vk::Instance _instance, vk::PhysicalDevice _pDevice, vk::Device _device,
-                              vk::Queue _presentQueue, uint32_t _queueFamiliy);
-        std::vector<const char*> getRequiredExtensions();
+        bool windowShouldClose(Window window);
 
-        bool keyDown(Window window, Key key) override;
-        std::pair<int, int> mousePosition(Window window) override;
+        bool keyDown(Window window, Key key);
+        std::pair<int, int> mousePosition(Window window);
 
-        std::pair<uint32_t, uint32_t> screenResolution() override;
+        std::pair<uint32_t, uint32_t> screenResolution() const;
 
-        // Extras
-        Window_TV& getWindow(Window window);
-        std::unordered_map<Window, Window_TV> windows;
+        vkData::Window& getWindow(Window window);
 
-    private:
-        vk::Instance instance;
-        vk::PhysicalDevice pDevice;
-        vk::Device device;
-        vk::Queue presentQueue;
-        uint32_t queueFamiliy;
-
-        vk::SurfaceFormatKHR chooseSurfaceFormat(vk::SurfaceKHR surface);
-        vk::PresentModeKHR choosePresentMode(vk::SurfaceKHR surface, PresentMode wantedPresentMode);
-        vk::Extent2D chooseSwapExtent(vk::SurfaceKHR surface, const WindowInfo& windowInfo);
+        // window handle to data
+        std::unordered_map<Window, vkData::Window> windows;
     };
 
 };  // namespace tga

@@ -19,13 +19,13 @@ struct CamMetaData{
 class CameraController
 {
     public:
-    CameraController(std::shared_ptr<tga::Interface> _tgai, tga::Window _window, 
+    CameraController(tga::Interface& _tgai, tga::Window _window, 
         float _fov,float _aspectRatio, float _nearPlane, float _farPlane,
         glm::vec3 _position, glm::vec3 _front, glm::vec3 _up);
     void update(float deltaTime);
 
-    CamData& Data();
-    CamMetaData& MetaData();
+    tga::StagingBuffer& Data();
+    tga::StagingBuffer& MetaData();
     glm::vec3& Position();
 
     float speed = 4.;
@@ -37,14 +37,15 @@ class CameraController
     void processInput(float dt);
     void updateData();
 
-    std::shared_ptr<tga::Interface> tgai;
+    tga::Interface& tgai;
     tga::Window window;
+    tga::StagingBuffer camStaging, camMetaStaging;
+    CamData* camData;
+    CamMetaData* camMetaData;
     float fov, aspectRatio, nearPlane, farPlane;
     glm::vec3 position, front, up, right, lookDir;
     float pitch = 0 , yaw = 0;
     float lastMouseX = 0, lastMouseY = 0;
     float mouseSensitivity = 1;
     
-    CamData camData;
-    CamMetaData camMetaData;
 };

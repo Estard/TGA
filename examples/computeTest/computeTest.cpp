@@ -1,95 +1,101 @@
-#include "tga/tga.hpp"
-#include "tga/tga_vulkan/tga_vulkan.hpp"
-
 #include <chrono>
-#include <sstream>
-#include <thread>
-#include <random>
-#include <future>
-#include <list>
 
-#include "tga/tga_math.hpp"
+#include "tga/tga.hpp"
+#include "tga/tga_utils.hpp"
 
-static std::vector<char> readFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-    if (!file.is_open()) {
-        throw std::runtime_error("failed to open file!");
-    }
-    size_t fileSize = (size_t) file.tellg();
-    std::vector<char> buffer(fileSize);
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-    return buffer;
-}
-
-static tga::Shader loadShader(tga::TGAVulkan &tgav, const std::string& filename, tga::ShaderType type)
-{
-    auto shaderData = readFile(filename);
-    return tgav.createShader({type,(uint8_t*)shaderData.data(),shaderData.size()});
-}
-
-class ComputeIndexBuffer{
-
-    uint32_t resX,resY;
-    tga::TGAVulkan tgav;
-    std::vector<uint32_t> indices;
-    public:
-
-    ComputeIndexBuffer(uint32_t _resX, uint32_t _resY):resX(_resX),resY(_resY),tgav(tga::TGAVulkan()),indices((resX-1)*(resY-1)*6,-1)
-    {
-
-    }
-
-    void run()
-    {
-        const std::array<uint32_t,2> dim{resX,resY};
-        auto data = tgav.createBuffer({tga::BufferUsage::uniform,(uint8_t*)dim.data(),dim.size()*sizeof(uint32_t)});
-        auto buf = tgav.createBuffer({tga::BufferUsage::storage,(uint8_t*)indices.data(),indices.size()*sizeof(uint32_t)});
-        auto shader = loadShader(tgav,"shaders/indexComp.spv",tga::ShaderType::compute);
-        auto tex = tgav.createTexture({1,1,tga::Format::r32_sfloat});
-        tga::RenderPassInfo rpInfo{{shader},tex};
-        rpInfo.inputLayout.setLayouts.push_back({{{tga::BindingType::uniformBuffer},{tga::BindingType::storageBuffer}}});
-        auto pass = tgav.createRenderPass(rpInfo);
-        auto inputSet = tgav.createInputSet({pass,0,{{data,0},{buf,1}}});
-        tgav.beginCommandBuffer();
-        tgav.setRenderPass(pass,0);
-        tgav.bindInputSet(inputSet);
-        tgav.dispatch(resX-1,resY-1,1);
-        auto cmd = tgav.endCommandBuffer();
-        
-        tgav.execute(cmd);
-        auto res = tgav.readback(buf);
-        
-        if(res.size()>=(indices.size()*sizeof(uint32_t)))
-        {
-            std::memcpy(indices.data(),res.data(),indices.size()*sizeof(uint32_t));
-            for(size_t i = 0; i < indices.size();i++)
-            {
-                std::cout << indices[i]<<' ';
-                if((i+1)%6==0&&i>0)
-                    std::cout <<'\n';
-            }
-        }
-        else
-        {
-            std::cerr <<"readback wasn't successful\n";
-        }
-    }
+struct BufferParams {
+    float a;
+    uint32_t size;
 };
 
-
-
-int main(void)
+// Reference implementation
+static void saxpy(BufferParams const& params, float *x, float *y, float *z)
 {
-    try
-    {
-        ComputeIndexBuffer sb{16,16};
-        sb.run();
+    float a = params.a;
+    auto start = std::chrono::steady_clock::now();
+    for (uint32_t i = 0; i < params.size; ++i) {
+        z[i] = a * x[i] + y[i];
     }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
+    auto end = std::chrono::steady_clock::now();
+    std::cout << "CPU Execution Time: " << std::chrono::duration<double,std::milli>(end - start).count() << "ms\n";
+}
+
+int main()
+{
+    tga::Interface tgai;
+    auto saxpyShader = tga::loadShader("../shaders/saxpy_comp.spv", tga::ShaderType::compute, tgai);
+
+    tga::InputLayout inputLayout{tga::SetLayout{tga::BindingType::uniformBuffer, tga::BindingType::storageBuffer,
+                                                tga::BindingType::storageBuffer, tga::BindingType::storageBuffer}};
+
+    auto computePass = tgai.createComputePass({saxpyShader, inputLayout});
+
+    // My integrated GPU only has 2048 MB, this is
+    BufferParams params{6.9, (1 << 27) + (1 << 20) + 17};
+
+    auto bufferSize = params.size * sizeof(float);
+
+    auto paramsStaging = tgai.createStagingBuffer({sizeof(params), tga::memoryAccess(params)});
+    auto paramBuf = tgai.createBuffer({tga::BufferUsage::uniform, sizeof(params), paramsStaging});
+
+    auto xStaging = tgai.createStagingBuffer({bufferSize});
+    auto yStaging = tgai.createStagingBuffer({bufferSize});
+
+    // Staging buffers can be written to after creation. This requires getting a pointer to memory
+    auto x = static_cast<float *>(tgai.getMapping(xStaging));
+    auto y = static_cast<float *>(tgai.getMapping(yStaging));
+
+    for (uint32_t i = 0; i < params.size; ++i) {
+        x[i] = static_cast<float>(i);
+        y[i] = x[i] * 3.0 + 1.0;
     }
-    std::cout << "Shutdown"<<std::endl;
+    auto xBuf = tgai.createBuffer({tga::BufferUsage::storage, bufferSize, xStaging});
+    auto yBuf = tgai.createBuffer({tga::BufferUsage::storage, bufferSize, yStaging});
+    auto zBuf = tgai.createBuffer({tga::BufferUsage::storage, bufferSize});
+
+    auto inputSet = tgai.createInputSet(
+        tga::InputSetInfo(computePass, {tga::Binding{paramBuf, 0}, {xBuf, 1}, {yBuf, 2}, {zBuf, 3}}, 0));
+
+    auto resultSB = tgai.createStagingBuffer({bufferSize});
+
+    constexpr auto workGroupSize = 64;
+    auto cmd = tga::CommandRecorder(tgai)
+                   .setComputePass(computePass)
+                   .bindInputSet(inputSet)
+                   .dispatch((params.size + (workGroupSize - 1)) / workGroupSize, 1, 1)
+                   .endRecording();
+    auto start = std::chrono::steady_clock::now();
+    tgai.execute(cmd);
+    tgai.waitForCompletion(cmd);
+    auto end = std::chrono::steady_clock::now();
+
+    auto getResultCmd =
+        tga::CommandRecorder(tgai)
+            // barrier here is not necessary since the results will be available after waiting for command completion
+            // if the download should be recorded in the same commandbuffer, the barrier would be necessary
+            .barrier(tga::PipelineStage::ComputeShader, tga::PipelineStage::Transfer)
+            .bufferDownload(zBuf, resultSB, bufferSize)
+            .endRecording();
+    auto transferStart = std::chrono::steady_clock::now();
+    tgai.execute(getResultCmd);
+    tgai.waitForCompletion(getResultCmd);
+    auto transferEnd = std::chrono::steady_clock::now();
+
+    auto z = static_cast<float *>(tgai.getMapping(resultSB));
+    for (uint32_t i = 0; i < params.size; ++i) {
+        auto expected = params.a * x[i] + y[i];
+        if (z[i] != expected) {
+            std::cerr << "Index " << i << " is wrong, expected " << expected << " but got " << z[i] << " instead\n";
+            break;
+        }
+    }
+
+    std::cout << "Saxpy Compute: Success\n";
+    std::cout << "Vector Size: " << params.size << '\n';
+    std::cout << "GPU Execution time: " << std::chrono::duration<double, std::milli>(end - start).count() << "ms\n";
+    std::cout << "Buffer Readback time: " << std::chrono::duration<double, std::milli>(transferEnd - transferStart).count() << "ms\n";
+    
+    saxpy(params, x, y, z);
+
+    return 0;
 }
