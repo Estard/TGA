@@ -1036,7 +1036,7 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
     // TODO one expects many here
     auto instanceGeometry = vk::AccelerationStructureGeometryKHR{}.setGeometry(instanceData);
 
-    auto maxPrimitives = TLASInfo.instanceInfos.size();
+    auto maxPrimitives = static_cast<uint32_t>(TLASInfo.instanceInfos.size());
 
     vk::AccelerationStructureBuildGeometryInfoKHR buildInfo;
     buildInfo.setType(vk::AccelerationStructureTypeKHR::eTopLevel)
@@ -1311,8 +1311,8 @@ void Interface::setRenderPass(CommandBuffer cmdBuffer, RenderPass renderPass, ui
 
     cmdData.cmdBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, renderPassData.pipeline);
     cmdData.cmdBuffer.setViewport(0, vk::Viewport()
-                                         .setWidth(renderPassData.area.width)
-                                         .setHeight(renderPassData.area.height)
+                                         .setWidth(static_cast<float>(renderPassData.area.width))
+                                         .setHeight(static_cast<float>(renderPassData.area.height))
                                          .setMinDepth(0)
                                          .setMaxDepth(1));
     cmdData.cmdBuffer.setScissor(0, {{{}, renderPassData.area}});
@@ -1364,7 +1364,8 @@ uint32_t Interface::nextFrame(Window window)
     wsi.pollEvents(window);
 
     auto acquireSignal = windowData.nextAcquireSignal;
-    windowData.nextAcquireSignal = (windowData.nextAcquireSignal + 1) % windowData.imageAcquiredSignals.size();
+    windowData.nextAcquireSignal =
+        (windowData.nextAcquireSignal + 1) % static_cast<uint32_t>(windowData.imageAcquiredSignals.size());
     auto nextFrameIndex =
         device.acquireNextImageKHR(windowData.swapchain, 0, windowData.imageAcquiredSignals[acquireSignal]).value;
 
@@ -1385,7 +1386,8 @@ void Interface::present(Window window, uint32_t imageIndex)
     auto& renderQueue = state->renderQueue;
 
     auto renderSignal = windowData.nextRenderSignal;
-    windowData.nextRenderSignal = (windowData.nextRenderSignal + 1) % windowData.renderCompletedSignals.size();
+    windowData.nextRenderSignal =
+        (windowData.nextRenderSignal + 1) % static_cast<uint32_t>(windowData.renderCompletedSignals.size());
 
     renderQueue.submit(vk::SubmitInfo()
                            .setCommandBuffers(windowData.toPresentSrcTransitionCmds[imageIndex])
