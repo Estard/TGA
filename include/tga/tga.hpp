@@ -55,10 +55,6 @@ public:
 
     void *getMapping(StagingBuffer);
 
-    // void updateBuffer(Buffer buffer, uint8_t const *data, size_t dataSize, uint32_t offset);
-    // std::vector<uint8_t> readback(Buffer buffer);
-    // std::vector<uint8_t> readback(Texture texture);
-
     // Window functions
 
     /** \brief Number of framebuffers used by a window.
@@ -245,9 +241,7 @@ public:
     CommandBuffer endRecording()
     {
         tgai.endCommandBuffer(cmdBuffer);
-        auto result = cmdBuffer;
-        cmdBuffer = {};
-        return result;
+        return cmdBuffer;
     }
 
 private:

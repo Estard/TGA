@@ -78,8 +78,7 @@ inline bool operator&(BufferUsage a, BufferUsage b)
 }
 
 struct BufferInfo {
-    BufferUsage usage; /**<Usage flags of the Buffer. Valid Usage flags are BufferUsage::uniform, BufferUsage::vertex,
-                          BufferUsage::index and BufferUsage::indirect. Others are work in progress*/
+    BufferUsage usage; /**<Usage flags of the Buffer. Flags can be combined with the | operator*/
     size_t size;       /**<Size of the buffer data in bytes*/
     StagingBuffer srcData; /**<(optional) Data of the Buffer to be uploaded. */
     size_t srcDataOffset;  /**<Offset from the start of the staging buffer*/
@@ -115,7 +114,7 @@ struct TextureInfo {
     TextureType textureType; /**<Type of the texture, by default 2D*/
     uint32_t depthLayers;  /**<If texture type is not 2D, this describes the third dimension of the image. Must be 6 for
                               Cube */
-    StagingBuffer srcData; /**<Data of the Texture. Pass an empty optional to create a texture with undefined content*/
+    StagingBuffer srcData; /**<(optional) Data of the Texture. Pass a TGA_NULL_HANDLE to create a texture with undefined content*/
     size_t srcDataOffset;  /**<Offset from the start of the staging buffer*/
 
     TextureInfo(uint32_t _width, uint32_t _height, Format _format, SamplerMode _samplerMode = SamplerMode::nearest,
@@ -270,17 +269,13 @@ struct VertexLayout {
 enum class ClearOperation { none, color, depth, all };
 
 struct RenderPassInfo {
-    Shader vertexShader;
-    Shader fragmentShader;
-    /**<The Shaders to be executed in this RenderPass. Must be
-                                        ordererd in accordance with the shader stages of the
-                                        graphics pipeline (i.e vertex before fragment, no
-                                        duplicate stages, etc.). If using a compute shader it has
-                                        to be the only stader stage*/
+    Shader vertexShader; /**<The vertex shader executed by this RenderPass*/
+    Shader fragmentShader; /**<The fragment shader executed by this RenderPass*/
+    
     using RenderTarget = std::variant<Texture, Window, std::vector<Texture>>;
     RenderTarget renderTarget{}; /**<Where the result of the fragment shader stage
                                   will be saved. Keep in mind that a Window can have several
-                                  framebuffers and only one is written at a time*/
+                                  framebuffers*/
     VertexLayout vertexLayout{}; /**<Describes the format of the vertices in the vertex buffer*/
     InputLayout inputLayout{};   /**<Describes how the Bindings are organized*/
 

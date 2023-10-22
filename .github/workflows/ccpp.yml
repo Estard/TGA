@@ -31,9 +31,5 @@ jobs:
         path: examples/heightmapDemo/heightmapDemo
     - uses: actions/upload-artifact@v1
       with:
-        name: objViewer
-        path: examples/objViewer/objViewer
-    - uses: actions/upload-artifact@v1
-      with:
         name: particleDemo
         path: examples/particleDemo/particleDemo
