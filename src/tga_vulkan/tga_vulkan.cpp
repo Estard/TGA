@@ -1,3 +1,7 @@
+#ifdef __APPLE__
+#define VK_ENABLE_BETA_EXTENSIONS 1
+#endif
+
 #include "tga/tga_vulkan/tga_vulkan.hpp"
 
 #include "tga/tga_vulkan/tga_vulkan_debug.hpp"
@@ -155,15 +159,20 @@ namespace /*init vulkan objects*/
     static const std::array<const char *, 1> vulkanLayers = {"VK_LAYER_KHRONOS_validation"};
     vk::Instance createInstance(VulkanWSI const& wsi)
     {
+        vk::InstanceCreateFlags iFlags{};
+
         auto extensions = wsi.getRequiredExtensions();
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#ifdef __APPLE__
+        extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        iFlags = static_cast<vk::InstanceCreateFlagBits>(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR);
+#endif
         vk::ApplicationInfo appInfo("TGA", 1, "TGA", 1, VK_API_VERSION_1_2);
         auto instance = vk::createInstance(vk::InstanceCreateInfo()
                                                .setPApplicationInfo(&appInfo)
                                                .setPEnabledLayerNames(vulkanLayers)
                                                .setPEnabledExtensionNames(extensions)
-
-        );
+                                               .setFlags(iFlags));
         loadVkInstanceExtensions(instance);
         return instance;
     }
@@ -746,8 +755,7 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
         OneTimeCommand{device, cmdPool, renderQueue}.cmd.pipelineBarrier(
             vk::PipelineStageFlagBits::eTopOfPipe,
             vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, {}, {}, {},
-            layoutTransitionBarrier(image, vk::ImageLayout::eUndefined,
-                                    vk::ImageLayout::eDepthStencilAttachmentOptimal,
+            layoutTransitionBarrier(image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal,
                                     vk::ImageAspectFlagBits::eDepth));
 
         return {image, view, memory};
@@ -1072,7 +1080,7 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
                                                           .setSize(buildSizes.accelerationStructureSize)
                                                           .setType(vk::AccelerationStructureTypeKHR::eBottomLevel));
 
-    std::vector<vk::AccelerationStructureBuildRangeInfoKHR const*> rangeInfos;
+    std::vector<vk::AccelerationStructureBuildRangeInfoKHR const *> rangeInfos;
     // auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
     // .setPrimitiveCount(1)
     //                      .setFirstVertex(BLASInfo.firstVertex)
