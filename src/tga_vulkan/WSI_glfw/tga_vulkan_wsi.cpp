@@ -24,23 +24,22 @@ namespace /*private*/
         auto presentModes = pDevice.getSurfacePresentModesKHR(surface);
         auto presentMode = vk::PresentModeKHR::eFifo;  // Always available
 
-        for(auto& mode: presentModes){
-            if(wantedPresentMode == PresentMode::immediate && mode == vk::PresentModeKHR::eImmediate){
+        for (auto& mode : presentModes) {
+            if (wantedPresentMode == PresentMode::immediate && mode == vk::PresentModeKHR::eImmediate) {
                 presentMode = mode;
                 break;
             }
-            if(wantedPresentMode != PresentMode::vsync)
-                continue;
-            
-            // Prefer Mailbox over everything else
-            if(mode == vk::PresentModeKHR::eMailbox){
+            if (wantedPresentMode != PresentMode::vsync) continue;
+
+            // Prefer Mailbox over other vsync options
+            if (mode == vk::PresentModeKHR::eMailbox) {
                 presentMode = mode;
                 break;
             }
             // Take the relaxed fifo over regular fifo
-            //if(mode == vk::PresentModeKHR::eFifoRelaxed){
-            //    presentMode = mode;
-            //}
+            if (mode == vk::PresentModeKHR::eFifoRelaxed) {
+                presentMode = mode;
+            }
         }
         return presentMode;
     }
@@ -317,7 +316,8 @@ void VulkanWSI::pollEvents(Window) { glfwPollEvents(); }
 // {
 //     auto& handle = windows[window];
 //     auto res =
-//         presentQueue.presentKHR({1, &handle.renderFinishedSemaphore, 1, &handle.swapchain, &handle.currentFrameIndex});
+//         presentQueue.presentKHR({1, &handle.renderFinishedSemaphore, 1, &handle.swapchain,
+//         &handle.currentFrameIndex});
 //     if (res != vk::Result::eSuccess) std::cerr << "[TGA Vulkan] Warning: Window Surface has become suboptimal\n";
 // }
 

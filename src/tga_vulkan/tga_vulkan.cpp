@@ -164,7 +164,7 @@ namespace /*init vulkan objects*/
         auto extensions = wsi.getRequiredExtensions();
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #ifdef __APPLE__
-        extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
         iFlags = static_cast<vk::InstanceCreateFlagBits>(VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR);
 #endif
         vk::ApplicationInfo appInfo("TGA", 1, "TGA", 1, VK_API_VERSION_1_2);
@@ -238,6 +238,10 @@ namespace /*init vulkan objects*/
                         VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME};
         }(rayQueryFeature.rayQuery);
         if (rayQueryFeature.rayQuery) std::cout << "Vulkan RayQuery extension enabled\n";
+
+        #ifdef __APPLE_
+        extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+        #endif
 
         float queuePriority = 1.0f;
         std::array<vk::DeviceQueueCreateInfo, 1> queueInfos{
