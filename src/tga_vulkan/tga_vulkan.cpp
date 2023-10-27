@@ -1357,6 +1357,7 @@ void Interface::waitForCompletion(CommandBuffer cmdBuffer)
     auto& cmdData = state->getData(cmdBuffer);
 
     std::ignore = device.waitForFences(cmdData.completionFence, true, std::numeric_limits<uint64_t>::max());
+    device.resetFences(cmdData.completionFence);
 }
 
 void *Interface::getMapping(StagingBuffer stagingBuffer) { return state->getData(stagingBuffer).mapping; }
