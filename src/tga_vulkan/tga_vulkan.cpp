@@ -1380,7 +1380,7 @@ uint32_t Interface::nextFrame(Window window)
     windowData.nextAcquireSignal =
         (windowData.nextAcquireSignal + 1) % static_cast<uint32_t>(windowData.imageAcquiredSignals.size());
     auto nextFrameIndex =
-        device.acquireNextImageKHR(windowData.swapchain, 0, windowData.imageAcquiredSignals[acquireSignal]).value;
+        device.acquireNextImageKHR(windowData.swapchain, std::numeric_limits<uint64_t>::max(), windowData.imageAcquiredSignals[acquireSignal]).value;
 
     vk::PipelineStageFlags waitStage{vk::PipelineStageFlagBits::eColorAttachmentOutput};
     renderQueue.submit(vk::SubmitInfo()

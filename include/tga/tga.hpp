@@ -113,7 +113,7 @@ public:
     void free(ext::BottomLevelAccelerationStructure);
 
 private:
-    friend struct CommandRecorder;
+    friend class CommandRecorder;
     CommandBuffer beginCommandBuffer(CommandBuffer cmdBuffer);
     void setRenderPass(CommandBuffer, RenderPass, uint32_t framebufferIndex,
                        std::array<float, 4> const& colorClearValue, float depthClearValue);
