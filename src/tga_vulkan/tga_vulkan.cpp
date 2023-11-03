@@ -285,11 +285,13 @@ namespace /*helper functions*/
 
         for (uint32_t i = 0; i < memProps.memoryTypeCount; ++i) {
             auto& memType = memProps.memoryTypes[i];
-            auto heapSize = memProps.memoryHeaps[memType.heapIndex].size;
             if ((memType.propertyFlags & propertyMask) != propertyMask) continue;
-            if (bestSize > heapSize) continue;
-            memoryIndex = i;
+
+            auto heapSize = memProps.memoryHeaps[memType.heapIndex].size;
+            if (bestSize >= heapSize) continue;
+            
             bestSize = heapSize;
+            memoryIndex = i;
         }
         return memoryIndex;
     }
