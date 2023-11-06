@@ -259,9 +259,6 @@ Window VulkanWSI::createWindow(const WindowInfo& windowInfo, vk::Instance& insta
                                                         surfaceFormat.format,
                                                         {},
                                                         {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}}));
-        //   fences.emplace_back(device.createFence({{vk::FenceCreateFlagBits::eSignaled}}));
-        //   availabilitySemas.emplace_back(device.createSemaphore({}));
-        //   renderSemas.emplace_back(device.createSemaphore({}));
     }
 
     vkData::Window window_tv{surface, swapchain, extent, surfaceFormat.format, glfwWindow, images, imageViews};
@@ -276,8 +273,6 @@ void VulkanWSI::free(Window window, vk::Instance& instance, vk::Device& device)
     for (auto& imageView : handle.imageViews) device.destroy(imageView);
     device.destroy(handle.swapchain);
     instance.destroy(handle.surface);
-    // for(auto &fence : handle.inFlightFences)
-    // device.destroy(handle.inFlightFence);
     for (auto& signal : handle.imageAcquiredSignals) {
         device.destroy(signal);
     }
@@ -285,9 +280,6 @@ void VulkanWSI::free(Window window, vk::Instance& instance, vk::Device& device)
     for (auto& signal : handle.renderCompletedSignals) {
         device.destroy(signal);
     }
-    // device.destroy(handle.imageAvailableSemaphore);
-    //   for(auto &sema: handle.renderFinishedSemaphores)
-    // device.destroy(handle.renderFinishedSemaphore);
 
     glfwDestroyWindow(std::any_cast<GLFWwindow *>(handle.nativeHandle));
     windows.erase(window);
@@ -300,26 +292,9 @@ void VulkanWSI::setWindowTitle(Window window, const char *title)
 
 vkData::Window& VulkanWSI::getWindow(Window window) { return windows[window]; }
 
-// uint32_t VulkanWSI::aquireNextImage(Window window, vk::Device& device)
-// {
-//     glfwPollEvents();
-//     auto& handle = windows[window];
-//     auto nextFrame = device.acquireNextImageKHR(handle.swapchain, std::numeric_limits<uint32_t>::max(),
-//                                                 handle.imageAvailableSemaphore, vk::Fence());
-//     handle.currentFrameIndex = nextFrame.value;
-//     return handle.currentFrameIndex;
-// }
 
 void VulkanWSI::pollEvents(Window) { glfwPollEvents(); }
 
-// void VulkanWSI::presentImage(Window window, vk::Queue& presentQueue)
-// {
-//     auto& handle = windows[window];
-//     auto res =
-//         presentQueue.presentKHR({1, &handle.renderFinishedSemaphore, 1, &handle.swapchain,
-//         &handle.currentFrameIndex});
-//     if (res != vk::Result::eSuccess) std::cerr << "[TGA Vulkan] Warning: Window Surface has become suboptimal\n";
-// }
 
 bool VulkanWSI::windowShouldClose(Window window)
 {

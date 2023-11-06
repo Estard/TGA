@@ -45,16 +45,44 @@ struct Interface::InternalState {
     // void fillTexture(size_t size, const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target);
 
     // Bookkeeping
+    template <typename T>
+    struct Pool {
+        std::vector<T> data;
+        std::vector<size_t> freeList;
+
+        size_t push_back(T&& obj)
+        {
+            if (!freeList.empty()) {
+                auto idx = freeList.back();
+                freeList.pop_back();
+                data[idx] = std::move(obj);
+                return idx;
+            }
+            data.push_back(std::move(obj));
+            return data.size() - 1;
+        }
+
+        void free(size_t idx){
+            assert(idx < data.size());
+            data[idx] = {};
+            freeList.push_back(idx);
+        }
+
+        size_t size() const { return data.size(); }
+
+        T& operator[](size_t i) { return data[i]; }
+    };
+
     // Note: Windows are stored in WSI
-    std::vector<vkData::Shader> shaders;
-    std::vector<vkData::Buffer> buffers;
-    std::vector<vkData::StagingBuffer> stagingBuffers;
-    std::vector<vkData::Texture> textures;
-    std::vector<vkData::InputSet> inputSets;
-    std::vector<vkData::RenderPass> renderPasses;
-    std::vector<vkData::ComputePass> computePasses;
-    std::vector<vkData::CommandBuffer> commandBuffers;
-    std::vector<vkData::ext::AccelerationStructure> acclerationStructures;
+    Pool<vkData::Shader> shaders;
+    Pool<vkData::Buffer> buffers;
+    Pool<vkData::StagingBuffer> stagingBuffers;
+    Pool<vkData::Texture> textures;
+    Pool<vkData::InputSet> inputSets;
+    Pool<vkData::RenderPass> renderPasses;
+    Pool<vkData::ComputePass> computePasses;
+    Pool<vkData::CommandBuffer> commandBuffers;
+    Pool<vkData::ext::AccelerationStructure> acclerationStructures;
 
     vkData::Shader& getData(Shader);
     vkData::Buffer& getData(Buffer);
