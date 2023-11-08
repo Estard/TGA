@@ -58,6 +58,7 @@ namespace vkData
         vk::Pipeline pipeline{};
         vk::RenderPass renderPass;
         std::vector<vk::Framebuffer> framebuffers;
+        size_t numColorAttachmentsPerFrameBuffer;
         vk::Extent2D area;
         Layout layout;
     };
@@ -90,13 +91,14 @@ namespace vkData
         DepthBuffer depthBuffer{};
     };
 
-    namespace ext{
-        struct AccelerationStructure{
+    namespace ext
+    {
+        struct AccelerationStructure {
             vk::AccelerationStructureKHR accelerationStructure{};
             vk::Buffer buffer;
             vk::DeviceMemory memory;
         };
-    }
+    }  // namespace ext
 
 }  // namespace vkData
 }  // namespace tga

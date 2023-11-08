@@ -22,8 +22,9 @@ int main()
     tga::Texture cc4 = tgai.createTexture({screenResX, screenResY, tga::Format::r16_sfloat});
     // Renderpass using the shaders and rendering to the window
     tga::RenderPass renderPassBG =
-        tgai.createRenderPass(tga::RenderPassInfo{vertexShaderBG, fragmentShaderBG}.setRenderTarget(
-            std::vector<tga::Texture>{cc1, cc2, cc3, cc4}));
+        tgai.createRenderPass(tga::RenderPassInfo{vertexShaderBG, fragmentShaderBG}
+                                  .setRenderTarget(std::vector<tga::Texture>{cc1, cc2, cc3, cc4})
+                                  .setClearOperations(tga::ClearOperation::all));
 
     // Perform operations using output from previous pass as input
     tga::Shader vertexShaderFG, fragmentShaderFG;
@@ -46,21 +47,21 @@ int main()
 
     // Add a set layout to create binding points for input textures
     tga::RenderPass renderPassFG = tgai.createRenderPass(rpFGInfo);
-    tga::InputSet ccIS =
-        tgai.createInputSet(tga::InputSetInfo(renderPassFG).setBindings({{cc1, 0}, {cc2, 1}, {cc3, 2}, {cc4, 3}}).setIndex(0));
+    tga::InputSet ccIS = tgai.createInputSet(
+        tga::InputSetInfo(renderPassFG).setBindings({{cc1, 0}, {cc2, 1}, {cc3, 2}, {cc4, 3}}).setIndex(0));
 
     tga::CommandBuffer cmdBuffer;
 
     while (!tgai.windowShouldClose(window)) {
+        auto nextFrame = tgai.nextFrame(window);
+        cmdBuffer = tga::CommandRecorder{tgai, cmdBuffer}
+                        .setRenderPass(renderPassBG, 0)
+                        .draw(3, 0)
+                        .setRenderPass(renderPassFG, nextFrame)
+                        .bindInputSet(ccIS)
+                        .draw(3, 0)
+                        .endRecording();
 
-        auto nextFrame= tgai.nextFrame(window);
-        cmdBuffer = tga::CommandRecorder{tgai,cmdBuffer}.setRenderPass(renderPassBG,0)
-        .draw(3,0)
-        .setRenderPass(renderPassFG, nextFrame)
-        .bindInputSet(ccIS)
-        .draw(3,0)
-        .endRecording();
-        
         tgai.execute(cmdBuffer);
 
         // You should see a white screen, meaning all 4 values have been read and properly combined

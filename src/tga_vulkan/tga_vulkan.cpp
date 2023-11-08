@@ -413,7 +413,7 @@ Shader Interface::createShader(ShaderInfo const& shaderInfo)
 
     vk::ShaderModule module =
         device.createShaderModule({{}, shaderInfo.srcSize, reinterpret_cast<const uint32_t *>(shaderInfo.src)});
-    return Shader{toRawHandle<TgaShader>(shaders.push_back({module, shaderInfo.type}))};
+    return Shader{toRawHandle<TgaShader>(shaders.insert({module, shaderInfo.type}))};
 }
 
 StagingBuffer Interface::createStagingBuffer(StagingBufferInfo const& bufferInfo)
@@ -438,7 +438,7 @@ StagingBuffer Interface::createStagingBuffer(StagingBufferInfo const& bufferInfo
     auto mapping = device.mapMemory(memory, 0, bufferInfo.dataSize);
     if (bufferInfo.data) std::memcpy(mapping, bufferInfo.data, bufferInfo.dataSize);
 
-    return tga::StagingBuffer{toRawHandle<TgaStagingBuffer>(stagingBuffers.push_back({buffer, mapping, memory}))};
+    return tga::StagingBuffer{toRawHandle<TgaStagingBuffer>(stagingBuffers.insert({buffer, mapping, memory}))};
 }
 
 Buffer Interface::createBuffer(BufferInfo const& bufferInfo)
@@ -458,7 +458,7 @@ Buffer Interface::createBuffer(BufferInfo const& bufferInfo)
     vk::DeviceMemory vkMemory = device.allocateMemory({mr.size, deviceMemoryIndex});
     device.bindBufferMemory(buffer, vkMemory, 0);
 
-    tga::Buffer handle{toRawHandle<TgaBuffer>(buffers.push_back({buffer, vkMemory, usage, bufferInfo.size}))};
+    tga::Buffer handle{toRawHandle<TgaBuffer>(buffers.insert({buffer, vkMemory, usage, bufferInfo.size}))};
 
     if (bufferInfo.srcData) {
         auto& renderQueue = state->renderQueue;
@@ -573,7 +573,7 @@ Texture Interface::createTexture(TextureInfo const& textureInfo)
                                                    .setAddressModeV(addressMode)
                                                    .setAddressModeW(addressMode));
 
-    Texture handle{toRawHandle<TgaTexture>(textures.push_back({image, view, memory, sampler, extent, format, {}}))};
+    Texture handle{toRawHandle<TgaTexture>(textures.insert({image, view, memory, sampler, extent, format, {}}))};
 
     OneTimeCommand createTexture{device, cmdPool, renderQueue};
     if (textureInfo.srcData) {
@@ -725,8 +725,8 @@ InputSet Interface::createInputSet(InputSetInfo const& inputSetInfo)
     }
     device.updateDescriptorSets(writeSets, {});
 
-    return tga::InputSet{toRawHandle<TgaInputSet>(inputSets.push_back(
-        {descriptorPool, descriptorSet, bindPoint, layoutData.pipelineLayout, inputSetInfo.index}))};
+    return tga::InputSet{toRawHandle<TgaInputSet>(
+        inputSets.insert({descriptorPool, descriptorSet, bindPoint, layoutData.pipelineLayout, inputSetInfo.index}))};
 }
 
 RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
@@ -840,8 +840,10 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
 
     std::vector<vk::Framebuffer> framebuffers;
     vk::Extent2D renderArea;
+    size_t numColorAttachmentsPerFrameBuffer{0};
 
     if (auto texture = std::get_if<Texture>(&renderPassInfo.renderTarget)) {
+        numColorAttachmentsPerFrameBuffer = 1;
         auto& textureData = state->getData(*texture);
         renderArea = vk::Extent2D{textureData.extent.width, textureData.extent.height};
         std::array<vk::ImageView, 2> attachments{textureData.imageView, textureData.depthBuffer.imageView};
@@ -852,6 +854,7 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
                                                             .setLayers(1)));
 
     } else if (auto window = std::get_if<Window>(&renderPassInfo.renderTarget)) {
+        numColorAttachmentsPerFrameBuffer = 1;
         auto& windowData = state->getData(*window);
         renderArea = vk::Extent2D{windowData.extent.width, windowData.extent.height};
         for (auto& imageView : windowData.imageViews) {
@@ -865,6 +868,7 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
 
     } else {
         auto& targets = std::get<std::vector<Texture>>(renderPassInfo.renderTarget);
+        numColorAttachmentsPerFrameBuffer = targets.size();
         auto& referenceData = state->getData(targets[0]);
         renderArea = vk::Extent2D{referenceData.extent.width, referenceData.extent.height};
         std::vector<vk::ImageView> attachments;
@@ -967,8 +971,8 @@ RenderPass Interface::createRenderPass(RenderPassInfo const& renderPassInfo)
             .value;
     }();
 
-    return tga::RenderPass{toRawHandle<TgaRenderPass>(renderPasses.push_back(
-        {pipeline, renderPass, std::move(framebuffers), renderArea,
+    return tga::RenderPass{toRawHandle<TgaRenderPass>(renderPasses.insert(
+        {pipeline, renderPass, std::move(framebuffers), numColorAttachmentsPerFrameBuffer, renderArea,
          vkData::Layout{pipelineLayout, std::move(descriptorSetLayouts), std::move(setDescriptorTypes)}}))};
 }
 
@@ -1014,7 +1018,7 @@ ComputePass Interface::createComputePass(ComputePassInfo const& computePassInfo)
             .value;
 
     ;
-    return tga::ComputePass{toRawHandle<TgaComputePass>(computePasses.push_back(
+    return tga::ComputePass{toRawHandle<TgaComputePass>(computePasses.insert(
         {pipeline, vkData::Layout{pipelineLayout, std::move(descriptorSetLayouts), std::move(setDescriptorTypes)}}))};
 }
 
@@ -1094,7 +1098,7 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
         ot.cmd.buildAccelerationStructuresKHR(buildInfo, rangeInfos);
     }
 
-    auto idx = acclerationStructures.push_back({blas, acBuffer, acMem});
+    auto idx = acclerationStructures.insert({blas, acBuffer, acMem});
 
     device.destroy(scratchBuffer);
     device.free(scratchBufferMem);
@@ -1173,7 +1177,7 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
         ot.cmd.buildAccelerationStructuresKHR(buildInfo, &rangeInfo);
     }
 
-    auto idx = acclerationStructures.push_back({blas, acBuffer, acMem});
+    auto idx = acclerationStructures.insert({blas, acBuffer, acMem});
 
     device.destroy(scratchBuffer);
     device.free(scratchBufferMem);
@@ -1187,8 +1191,8 @@ CommandBuffer Interface::beginCommandBuffer(CommandBuffer cmdBuffer)
     auto& cmdPool = state->cmdPool;
     if (!cmdBuffer) {
         cmdBuffer = toRawHandle<TgaCommandBuffer>(
-            commandBuffers.push_back({device.allocateCommandBuffers({cmdPool, vk::CommandBufferLevel::ePrimary, 1})[0],
-                                      device.createFence({vk::FenceCreateFlagBits::eSignaled})}));
+            commandBuffers.insert({device.allocateCommandBuffers({cmdPool, vk::CommandBufferLevel::ePrimary, 1})[0],
+                                   device.createFence({vk::FenceCreateFlagBits::eSignaled})}));
     }
     auto& cmdData = state->getData(cmdBuffer);
 
@@ -1305,10 +1309,9 @@ void Interface::setRenderPass(CommandBuffer cmdBuffer, RenderPass renderPass, ui
     if (cmdData.currentRenderPass) cmdData.cmdBuffer.endRenderPass();
     cmdData.currentRenderPass = renderPassData.renderPass;
 
-    std::array<vk::ClearValue, 2> clearValues = {
-        vk::ClearColorValue(colorClearValue),
-        vk::ClearDepthStencilValue(depthClearValue, 0),
-    };
+    std::vector<vk::ClearValue> clearValues(renderPassData.numColorAttachmentsPerFrameBuffer,
+                                            vk::ClearColorValue(colorClearValue));
+    clearValues.push_back(vk::ClearDepthStencilValue(depthClearValue, 0));
 
     uint32_t frameIndex = std::min(framebufferIndex, uint32_t(renderPassData.framebuffers.size() - 1));
     cmdData.cmdBuffer.beginRenderPass(

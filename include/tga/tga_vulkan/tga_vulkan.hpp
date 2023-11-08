@@ -22,35 +22,13 @@ struct Interface::InternalState {
     vk::Queue renderQueue;
     vk::CommandPool cmdPool;
 
-    vkData::Buffer allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
-    std::tuple<vk::ImageType, vk::ImageViewType, vk::ImageCreateFlags> determineImageTypeInfo(
-        const TextureInfo& textureInfo);
-    std::tuple<vk::Extent3D, uint32_t> determineImageDimensions(const TextureInfo& textureInfo);
-    std::pair<vk::ImageTiling, vk::ImageUsageFlags> determineImageFeatures(vk::Format& format);
-    vk::Format findDepthFormat();
-    vkData::DepthBuffer createDepthBuffer(uint32_t width, uint32_t height);
-    vk::RenderPass makeRenderPass(std::vector<vk::Format> const& colorFormats, ClearOperation clearOps,
-                                  vk::ImageLayout layout);
-    std::vector<vk::DescriptorSetLayout> decodeInputLayout(InputLayout const& inputLayout);
-    vk::Pipeline makeGraphicsPipeline(const RenderPassInfo& renderPassInfo, vk::PipelineLayout pipelineLayout,
-                                      vk::RenderPass renderPass);
-    std::pair<vk::Pipeline, vk::PipelineBindPoint> makePipeline(const RenderPassInfo& renderPassInfo,
-                                                                vk::PipelineLayout pipelineLayout,
-                                                                vk::RenderPass renderPass);
-
-    // vk::CommandBuffer beginOneTimeCmdBuffer(vk::CommandPool &cmdPool);
-    // void endOneTimeCmdBuffer(vk::CommandBuffer &cmdBuffer, vk::CommandPool &cmdPool, vk::Queue &submitQueue);
-
-    // void fillBuffer(size_t size, const uint8_t *data, uint32_t offset, vk::Buffer target);
-    // void fillTexture(size_t size, const uint8_t *data, vk::Extent3D extent, uint32_t layers, vk::Image target);
-
     // Bookkeeping
     template <typename T>
     struct Pool {
         std::vector<T> data;
         std::vector<size_t> freeList;
 
-        size_t push_back(T&& obj)
+        size_t insert(T&& obj)
         {
             if (!freeList.empty()) {
                 auto idx = freeList.back();
@@ -62,7 +40,8 @@ struct Interface::InternalState {
             return data.size() - 1;
         }
 
-        void free(size_t idx){
+        void free(size_t idx)
+        {
             assert(idx < data.size());
             data[idx] = {};
             freeList.push_back(idx);
