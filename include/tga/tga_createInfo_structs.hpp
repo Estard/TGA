@@ -5,6 +5,7 @@
 #include <optional>
 #include <variant>
 #include <vector>
+#include <array>
 
 #include "tga_format.hpp"
 #include "tga_resource_handles.hpp"

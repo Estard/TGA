@@ -63,7 +63,10 @@ int main()
     tga::Buffer vertexBuffer =
         tgai.createBuffer({tga::BufferUsage::vertex, vertexBufferCPU.size() * sizeof(Vertex), vertexStaging});
 
-    auto rpInfo = tga::RenderPassInfo{vertexShader, fragmentShader, window}.setVertexLayout(vertexLayout);
+    auto rpInfo = tga::RenderPassInfo{vertexShader, fragmentShader, window}
+                      .setVertexLayout(vertexLayout)
+                      .setClearOperations(tga::ClearOperation::all)
+                      .setPerPixelOperations(tga::PerPixelOperations{}.setBlendEnabled(true));
 
     tga::RenderPass renderPass = tgai.createRenderPass(rpInfo);
 
