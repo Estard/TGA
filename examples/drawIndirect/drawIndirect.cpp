@@ -66,9 +66,13 @@ int main()
     auto rpInfo = tga::RenderPassInfo{vertexShader, fragmentShader, window}
                       .setVertexLayout(vertexLayout)
                       .setClearOperations(tga::ClearOperation::all)
-                      .setPerPixelOperations(tga::PerPixelOperations{}.setBlendEnabled(true));
+                      .setPerPixelOperations(tga::PerPixelOperations{}.setBlendEnabled(true))
+                      .setInputLayout({tga::SetLayout{tga::BindingLayout(tga::BindingType::sampler,3)}});
 
+    auto tex = tgai.createTexture({1,1,tga::Format::r8g8b8a8_unorm});
     tga::RenderPass renderPass = tgai.createRenderPass(rpInfo);
+
+    auto is = tgai.createInputSet({renderPass, {tga::Binding(tex,0,0),tga::Binding(tex,0,1),tga::Binding(tex,0,2)},0});
 
     tga::CommandBuffer cmdBuffer;
 
@@ -76,6 +80,7 @@ int main()
         auto nextFrame = tgai.nextFrame(window);
         cmdBuffer = tga::CommandRecorder{tgai, cmdBuffer}
                         .setRenderPass(renderPass, nextFrame)
+                        .bindInputSet(is)
                         .bindVertexBuffer(vertexBuffer)
                         .drawIndirect(indirectDrawBuffer, indirectCommands.size())
                         .endRecording();
