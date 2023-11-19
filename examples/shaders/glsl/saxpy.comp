@@ -17,6 +17,8 @@ layout(set = 0, binding = 3) writeonly buffer Z{
     float z[];
 }; 
 
+layout(set = 0, binding = 4,r32ui) uniform uimage2D count;
+
 
 layout(local_size_x = 64) in;
 
@@ -24,6 +26,7 @@ void main(){
     uint id = gl_GlobalInvocationID.x;
     if(id >= size) return;
     z[id] = a * x[id] + y[id];
+    imageAtomicAdd(count,ivec2(0,0),1);
 }
 
 

@@ -26,7 +26,8 @@ int main()
     auto saxpyShader = tga::loadShader("../shaders/saxpy_comp.spv", tga::ShaderType::compute, tgai);
 
     tga::InputLayout inputLayout{tga::SetLayout{tga::BindingType::uniformBuffer, tga::BindingType::storageBuffer,
-                                                tga::BindingType::storageBuffer, tga::BindingType::storageBuffer}};
+                                                tga::BindingType::storageBuffer, tga::BindingType::storageBuffer,
+                                                tga::BindingType::storageImage}};
 
     auto computePass = tgai.createComputePass({saxpyShader, inputLayout});
 
@@ -53,8 +54,12 @@ int main()
     auto yBuf = tgai.createBuffer({tga::BufferUsage::storage, bufferSize, yStaging});
     auto zBuf = tgai.createBuffer({tga::BufferUsage::storage, bufferSize});
 
+    auto texStaging = tgai.createStagingBuffer({sizeof(uint32_t)});
+    auto storageTex = tgai.createTexture({1,1,tga::Format::r32_uint});
+
     auto inputSet = tgai.createInputSet(
-        tga::InputSetInfo(computePass, {tga::Binding{paramBuf, 0}, {xBuf, 1}, {yBuf, 2}, {zBuf, 3}}, 0));
+        tga::InputSetInfo(computePass, {tga::Binding{paramBuf, 0}, {xBuf, 1}, {yBuf, 2}, {zBuf, 3},
+        {storageTex,4}}, 0));
 
     auto resultSB = tgai.createStagingBuffer({bufferSize});
 
@@ -75,6 +80,7 @@ int main()
             // if the download should be recorded in the same commandbuffer, the barrier would be necessary
             .barrier(tga::PipelineStage::ComputeShader, tga::PipelineStage::Transfer)
             .bufferDownload(zBuf, resultSB, bufferSize)
+            .textureDownload(storageTex,texStaging,0)
             .endRecording();
     auto transferStart = std::chrono::steady_clock::now();
     tgai.execute(getResultCmd);
@@ -84,7 +90,7 @@ int main()
     auto z = static_cast<float *>(tgai.getMapping(resultSB));
     for (uint32_t i = 0; i < params.size; ++i) {
         auto expected = params.a * x[i] + y[i];
-        if (z[i] != expected) {
+        if (std::abs(z[i] - expected) > std::numeric_limits<float>::epsilon()) {
             std::cerr << "Index " << i << " is wrong, expected " << expected << " but got " << z[i] << " instead\n";
             break;
         }
@@ -94,7 +100,8 @@ int main()
     std::cout << "Vector Size: " << params.size << '\n';
     std::cout << "GPU Execution time: " << std::chrono::duration<double, std::milli>(end - start).count() << "ms\n";
     std::cout << "Buffer Readback time: " << std::chrono::duration<double, std::milli>(transferEnd - transferStart).count() << "ms\n";
-    
+    std::cout << "Texture content:" << *static_cast<uint32_t*>(tgai.getMapping(texStaging)) << '\n';
+
     saxpy(params, x, y, z);
 
     return 0;

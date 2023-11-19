@@ -1297,12 +1297,24 @@ void Interface::textureDownload(CommandBuffer cmdBuffer, Texture src, StagingBuf
 {
     auto& imageData = state->getData(src);
     auto dstBuffer = state->getData(dst).buffer;
-    state->getData(cmdBuffer).cmdBuffer.copyImageToBuffer(
-        imageData.image, vk::ImageLayout::eGeneral, dstBuffer,
-        vk::BufferImageCopy(dstOffset)
-            .setImageExtent(imageData.extent)
-            .setImageSubresource(
-                {vk::ImageAspectFlagBits::eColor, VK_REMAINING_MIP_LEVELS, VK_REMAINING_ARRAY_LAYERS}));
+    auto& cmd = state->getData(cmdBuffer).cmdBuffer;
+
+    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eFragmentShader,
+                        vk::PipelineStageFlagBits::eTransfer, {}, {}, {},
+                        layoutTransitionBarrier(imageData.image, vk::ImageLayout::eGeneral,
+                                                vk::ImageLayout::eTransferSrcOptimal, vk::ImageAspectFlagBits::eColor));
+    cmd.copyImageToBuffer(imageData.image, vk::ImageLayout::eTransferSrcOptimal, dstBuffer,
+                          vk::BufferImageCopy(dstOffset)
+                              .setImageExtent(imageData.extent)
+                              .setImageSubresource(vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor}
+                                                       .setLayerCount(1)
+                                                       .setBaseArrayLayer(0)
+                                                       .setMipLevel(0)));
+    cmd.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+                        vk::PipelineStageFlagBits::eVertexShader | vk::PipelineStageFlagBits::eComputeShader, {}, {},
+                        {},
+                        layoutTransitionBarrier(imageData.image, vk::ImageLayout::eTransferSrcOptimal,
+                                                vk::ImageLayout::eGeneral, vk::ImageAspectFlagBits::eColor));
 }
 
 void Interface::setRenderPass(CommandBuffer cmdBuffer, RenderPass renderPass, uint32_t framebufferIndex,
