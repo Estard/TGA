@@ -672,7 +672,7 @@ InputSet Interface::createInputSet(InputSetInfo const& inputSetInfo)
             case vk::DescriptorType::eUniformBuffer: ++poolSizeCounts[0]; break;
             case vk::DescriptorType::eStorageBuffer: ++poolSizeCounts[1]; break;
             case vk::DescriptorType::eCombinedImageSampler: ++poolSizeCounts[2]; break;
-            case vk::DescriptorType::eSampledImage: ++poolSizeCounts[3]; break;
+            case vk::DescriptorType::eStorageImage: ++poolSizeCounts[3]; break;
             case vk::DescriptorType::eAccelerationStructureKHR: ++poolSizeCounts[4]; break;
             default: break;
         }
@@ -686,7 +686,7 @@ InputSet Interface::createInputSet(InputSetInfo const& inputSetInfo)
             case 0: poolSizes.push_back({vk::DescriptorType::eUniformBuffer, poolSizeCounts[i]}); break;
             case 1: poolSizes.push_back({vk::DescriptorType::eStorageBuffer, poolSizeCounts[i]}); break;
             case 2: poolSizes.push_back({vk::DescriptorType::eCombinedImageSampler, poolSizeCounts[i]}); break;
-            case 3: poolSizes.push_back({vk::DescriptorType::eSampledImage, poolSizeCounts[i]}); break;
+            case 3: poolSizes.push_back({vk::DescriptorType::eStorageImage, poolSizeCounts[i]}); break;
             case 4: poolSizes.push_back({vk::DescriptorType::eAccelerationStructureKHR, poolSizeCounts[i]}); break;
         }
     }
