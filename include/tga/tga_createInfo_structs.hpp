@@ -328,10 +328,11 @@ struct ComputePassInfo {
  */
 
 struct Binding {
-    std::variant<Buffer, Texture> resource;
+    using Resource = std::variant<Buffer, Texture, ext::TopLevelAccelerationStructure>;
+    Resource resource;
     uint32_t slot;
     uint32_t arrayElement;
-    Binding(std::variant<Buffer, Texture> _resource, uint32_t _slot = 0, uint32_t _arrayElement = 0)
+    Binding(Resource _resource, uint32_t _slot = 0, uint32_t _arrayElement = 0)
         : resource(_resource), slot(_slot), arrayElement(_arrayElement)
     {}
 
@@ -389,7 +390,6 @@ namespace ext
         Buffer indexBuffer;
         size_t vertexStride;
         Format vertexPositionFormat;
-        uint32_t maxVertex;
         uint32_t vertexCount;
         uint32_t firstVertex;
         uint32_t vertexOffset;

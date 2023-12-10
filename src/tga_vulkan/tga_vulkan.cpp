@@ -9,8 +9,8 @@
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
                                                           VkDebugUtilsMessageTypeFlagsEXT,
-                                                          const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                                          void *)
+                                                          const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                          void*)
 {
     std::cerr << "[VULKAN VALIDATION LAYER]: " << pCallbackData->pMessage << std::endl;
     return VK_FALSE;
@@ -156,7 +156,7 @@ namespace /*conversion from tga to vulkan*/
 
 namespace /*init vulkan objects*/
 {
-    static const std::array<const char *, 1> vulkanLayers = {"VK_LAYER_KHRONOS_validation"};
+    static const std::array<const char*, 1> vulkanLayers = {"VK_LAYER_KHRONOS_validation"};
     vk::Instance createInstance(VulkanWSI const& wsi)
     {
         vk::InstanceCreateFlags iFlags{};
@@ -226,7 +226,7 @@ namespace /*init vulkan objects*/
         asFeature.pNext = &rayQueryFeature;
         gpu.getFeatures2(&features);
 
-        auto extensions = [](bool withRayQuerySupport) -> std::vector<const char *> {
+        auto extensions = [](bool withRayQuerySupport) -> std::vector<const char*> {
             if (!withRayQuerySupport)
                 return {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
             else
@@ -264,7 +264,6 @@ namespace /*init vulkan objects*/
 
 namespace /*helper functions*/
 {
-
     auto layoutTransitionBarrier(vk::Image image, vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
                                  vk::ImageAspectFlags aspectFlags)
     {
@@ -343,7 +342,11 @@ namespace /*helper functions*/
         {
             cmd.end();
             queue.submit(vk::SubmitInfo().setCommandBuffers(cmd), completionSignal);
-            std::ignore = device.waitForFences(1, &completionSignal, true, std::numeric_limits<uint64_t>::max());
+            auto res = device.waitForFences(1, &completionSignal, true, std::numeric_limits<uint64_t>::max());
+            if(res != vk::Result::eSuccess){
+                std::cerr << "Command Submission Failed: " << vk::to_string(res) << '\n';
+            }
+            
             device.freeCommandBuffers(cmdPool, 1, &cmd);
             device.destroyFence(completionSignal);
         }
@@ -416,7 +419,7 @@ Shader Interface::createShader(ShaderInfo const& shaderInfo)
     auto& shaders = state->shaders;
 
     vk::ShaderModule module =
-        device.createShaderModule({{}, shaderInfo.srcSize, reinterpret_cast<const uint32_t *>(shaderInfo.src)});
+        device.createShaderModule({{}, shaderInfo.srcSize, reinterpret_cast<const uint32_t*>(shaderInfo.src)});
     return Shader{toRawHandle<TgaShader>(shaders.insert({module, shaderInfo.type}))};
 }
 
@@ -459,7 +462,9 @@ Buffer Interface::createBuffer(BufferInfo const& bufferInfo)
 
     auto mr = device.getBufferMemoryRequirements(buffer);
 
-    vk::DeviceMemory vkMemory = device.allocateMemory({mr.size, deviceMemoryIndex});
+    vk::MemoryAllocateFlagsInfo memFlags{vk::MemoryAllocateFlagBits::eDeviceAddress};
+    vk::DeviceMemory vkMemory = device.allocateMemory(
+        {mr.size, deviceMemoryIndex, usage & vk::BufferUsageFlagBits::eShaderDeviceAddress ? &memFlags : nullptr});
     device.bindBufferMemory(buffer, vkMemory, 0);
 
     tga::Buffer handle{toRawHandle<TgaBuffer>(buffers.insert({buffer, vkMemory, usage, bufferInfo.size}))};
@@ -706,6 +711,9 @@ InputSet Interface::createInputSet(InputSetInfo const& inputSetInfo)
     bufferInfos.reserve(inputSetInfo.bindings.size());
 
     std::vector<vk::WriteDescriptorSet> writeSets;
+    writeSets.reserve(inputSetInfo.bindings.size());
+    std::vector<vk::WriteDescriptorSetAccelerationStructureKHR> accelerationStructsWriteSets;
+    accelerationStructsWriteSets.reserve(inputSetInfo.bindings.size());
     for (auto& binding : inputSetInfo.bindings) {
         auto& writeSet = writeSets.emplace_back();
         writeSet.setDstSet(descriptorSet)
@@ -725,6 +733,12 @@ InputSet Interface::createInputSet(InputSetInfo const& inputSetInfo)
             auto& data = state->getData(*buffer);
             auto& bufferInfo = bufferInfos.emplace_back().setBuffer(data.buffer).setRange(data.size).setOffset(0);
             writeSet.setBufferInfo(bufferInfo);
+        }
+        else if(auto tlas = std::get_if<ext::TopLevelAccelerationStructure>(&binding.resource)){
+            auto& data = state->getData(*tlas);
+            auto& acWriteSet = accelerationStructsWriteSets.emplace_back();
+            acWriteSet.setAccelerationStructures(data.accelerationStructure);
+            writeSet.setPNext(&acWriteSet);
         }
     }
     device.updateDescriptorSets(writeSets, {});
@@ -1036,23 +1050,41 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
     auto& deviceMemoryIndex = state->deviceMemoryIndex;
     auto& acclerationStructures = state->acclerationStructures;
 
+    vk::MemoryAllocateFlagsInfo memFlags{vk::MemoryAllocateFlagBits::eDeviceAddress};
+
     std::vector<vk::AccelerationStructureInstanceKHR> instances;
 
     for (auto& instance : TLASInfo.instanceInfos) {
         instances.emplace_back()
             .setTransform(instance.transform)
+            .setMask(0xFF)
             .setAccelerationStructureReference(
                 device.getAccelerationStructureAddressKHR(state->getData(instance.blas).accelerationStructure))
-            .setFlags(vk::GeometryInstanceFlagBitsKHR::eForceOpaque);
+            .setFlags(vk::GeometryInstanceFlagBitsKHR::eForceOpaque | vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
     }
-    // acinstance.setTransform()
-    //.setInstanceCustomIndex()
-    //.setAccelerationStructureReference()
-    //.setFlags(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
 
-    auto instanceData = vk::AccelerationStructureGeometryInstancesDataKHR{}.setData(instances.data());
-    // TODO one expects many here
-    auto instanceGeometry = vk::AccelerationStructureGeometryKHR{}.setGeometry(instanceData);
+    auto instanceDataSize = instances.size()*sizeof(vk::AccelerationStructureInstanceKHR);
+     auto instanceBuffer = device.createBuffer(vk::BufferCreateInfo()
+                                            .setSize(instanceDataSize)
+                                            .setUsage(vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
+                                                      vk::BufferUsageFlagBits::eShaderDeviceAddress|
+                                                      vk::BufferUsageFlagBits::eTransferDst)
+                                            .setQueueFamilyIndices(renderQueueFamily));
+    auto instanceMemReqs = device.getBufferMemoryRequirements(instanceBuffer);
+    auto instanceMem = device.allocateMemory({instanceMemReqs.size, deviceMemoryIndex, &memFlags});
+    device.bindBufferMemory(instanceBuffer, instanceMem, 0);
+
+    OneTimeCommand{device,cmdPool,renderQueue}.cmd.updateBuffer(instanceBuffer, 0, instanceDataSize, instances.data());
+    // {
+    //     OneTimeCommand ot{device, cmdPool, renderQueue};
+    //     ot.cmd.updateBuffer(instanceBuffer, 0, instanceDataSize, instances.data());
+    // }
+
+    // TODO one expects many here?
+    auto instanceData = vk::AccelerationStructureGeometryInstancesDataKHR{}.setData(device.getBufferAddress(instanceBuffer));
+    auto instanceGeometry = vk::AccelerationStructureGeometryKHR{}
+                                .setGeometry(instanceData)
+                                .setGeometryType(vk::GeometryTypeKHR::eInstances);
 
     auto maxPrimitives = static_cast<uint32_t>(TLASInfo.instanceInfos.size());
 
@@ -1071,8 +1103,11 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
                                                       vk::BufferUsageFlagBits::eShaderDeviceAddress)
                                             .setQueueFamilyIndices(renderQueueFamily));
     auto acMemReq = device.getBufferMemoryRequirements(acBuffer);
-    auto acMem = device.allocateMemory({acMemReq.size, deviceMemoryIndex});
+   
+    auto acMem = device.allocateMemory({acMemReq.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(acBuffer, acMem, 0);
+
+    
 
     auto scratchBuffer = device.createBuffer(
         vk::BufferCreateInfo()
@@ -1080,30 +1115,33 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
             .setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress)
             .setQueueFamilyIndices(renderQueueFamily));
     auto scratchBufferMemReq = device.getBufferMemoryRequirements(acBuffer);
-    auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex});
+    auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(scratchBuffer, scratchBufferMem, 0);
 
     buildInfo.setScratchData(device.getBufferAddress(scratchBuffer));
 
-    auto blas = device.createAccelerationStructureKHR(vk::AccelerationStructureCreateInfoKHR{}
+    auto tlas = device.createAccelerationStructureKHR(vk::AccelerationStructureCreateInfoKHR{}
                                                           .setBuffer(acBuffer)
                                                           .setSize(buildSizes.accelerationStructureSize)
-                                                          .setType(vk::AccelerationStructureTypeKHR::eBottomLevel));
+                                                          .setType(vk::AccelerationStructureTypeKHR::eTopLevel));
 
-    std::vector<vk::AccelerationStructureBuildRangeInfoKHR const *> rangeInfos;
-    // auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
-    // .setPrimitiveCount(1)
-    //                      .setFirstVertex(BLASInfo.firstVertex)
-    //                      .setPrimitiveCount(BLASInfo.vertexCount)
-    //                      .setPrimitiveOffset(BLASInfo.vertexOffset);
+    buildInfo.setDstAccelerationStructure(tlas);
+
+    auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}.
+    setPrimitiveCount(maxPrimitives)
+    .setFirstVertex(0)
+    .setPrimitiveOffset(0)
+    .setTransformOffset(0);
 
     {
         OneTimeCommand ot{device, cmdPool, renderQueue};
-        ot.cmd.buildAccelerationStructuresKHR(buildInfo, rangeInfos);
+        ot.cmd.buildAccelerationStructuresKHR(buildInfo, &rangeInfo);
     }
 
-    auto idx = acclerationStructures.insert({blas, acBuffer, acMem});
+    auto idx = acclerationStructures.insert({tlas, acBuffer, acMem});
 
+    device.destroy(instanceBuffer);
+    device.free(instanceMem);
     device.destroy(scratchBuffer);
     device.free(scratchBufferMem);
     return tga::ext::TopLevelAccelerationStructure{toRawHandle<TgaTopLevelAccelerationStructure>(idx)};
@@ -1123,19 +1161,21 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
     auto& indexBuffer = state->getData(BLASInfo.indexBuffer).buffer;
 
     // for geometry description
+    auto primitiveCount = BLASInfo.vertexCount/3;
+    assert(primitiveCount*3 == BLASInfo.vertexCount);
     auto triangleData = vk::AccelerationStructureGeometryTrianglesDataKHR{}
                             .setIndexType(vk::IndexType::eUint32)
                             .setIndexData(device.getBufferAddress(indexBuffer))
                             .setVertexData(device.getBufferAddress(vertexBuffer))
                             .setVertexFormat(tgaFormatToVkFormat(BLASInfo.vertexPositionFormat))
                             .setVertexStride(BLASInfo.vertexStride)
-                            .setMaxVertex(BLASInfo.maxVertex);
+                            .setMaxVertex(BLASInfo.firstVertex+BLASInfo.vertexCount);
+    
 
     auto geometry = vk::AccelerationStructureGeometryKHR{}
                         .setGeometryType(vk::GeometryTypeKHR::eTriangles)
                         .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
                         .setGeometry(triangleData);
-    auto maxPrimitives = BLASInfo.vertexCount;
 
     vk::AccelerationStructureBuildGeometryInfoKHR buildInfo;
     buildInfo.setType(vk::AccelerationStructureTypeKHR::eBottomLevel)
@@ -1144,7 +1184,7 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
         .setFlags(vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
 
     auto buildSizes = device.getAccelerationStructureBuildSizesKHR(vk::AccelerationStructureBuildTypeKHR::eDevice,
-                                                                   buildInfo, maxPrimitives);
+                                                                   buildInfo, primitiveCount);
 
     auto acBuffer = device.createBuffer(vk::BufferCreateInfo()
                                             .setSize(buildSizes.accelerationStructureSize)
@@ -1152,7 +1192,8 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
                                                       vk::BufferUsageFlagBits::eShaderDeviceAddress)
                                             .setQueueFamilyIndices(renderQueueFamily));
     auto acMemReq = device.getBufferMemoryRequirements(acBuffer);
-    auto acMem = device.allocateMemory({acMemReq.size, deviceMemoryIndex});
+    vk::MemoryAllocateFlagsInfo memFlags{vk::MemoryAllocateFlagBits::eDeviceAddress};
+    auto acMem = device.allocateMemory({acMemReq.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(acBuffer, acMem, 0);
 
     auto scratchBuffer = device.createBuffer(
@@ -1161,7 +1202,7 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
             .setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress)
             .setQueueFamilyIndices(renderQueueFamily));
     auto scratchBufferMemReq = device.getBufferMemoryRequirements(acBuffer);
-    auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex});
+    auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(scratchBuffer, scratchBufferMem, 0);
 
     buildInfo.setScratchData(device.getBufferAddress(scratchBuffer));
@@ -1170,11 +1211,12 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
                                                           .setBuffer(acBuffer)
                                                           .setSize(buildSizes.accelerationStructureSize)
                                                           .setType(vk::AccelerationStructureTypeKHR::eBottomLevel));
+    buildInfo.setDstAccelerationStructure(blas);
 
     auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
                          .setFirstVertex(BLASInfo.firstVertex)
-                         .setPrimitiveCount(BLASInfo.vertexCount)
-                         .setPrimitiveOffset(BLASInfo.vertexOffset);
+                         .setPrimitiveCount(primitiveCount)
+                         .setPrimitiveOffset(0);
 
     {
         OneTimeCommand ot{device, cmdPool, renderQueue};
@@ -1273,7 +1315,7 @@ void Interface::dispatch(CommandBuffer cmdBuffer, uint32_t groupCountX, uint32_t
     state->getData(cmdBuffer).cmdBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
-void Interface::inlineBufferUpdate(CommandBuffer cmdBuffer, Buffer dst, void const *srcData, uint16_t dataSize,
+void Interface::inlineBufferUpdate(CommandBuffer cmdBuffer, Buffer dst, void const* srcData, uint16_t dataSize,
                                    size_t dstOffset)
 {
     state->getData(cmdBuffer).cmdBuffer.updateBuffer(state->getData(dst).buffer, dstOffset, dataSize, srcData);
@@ -1375,7 +1417,7 @@ void Interface::waitForCompletion(CommandBuffer cmdBuffer)
     device.resetFences(cmdData.completionFence);
 }
 
-void *Interface::getMapping(StagingBuffer stagingBuffer) { return state->getData(stagingBuffer).mapping; }
+void* Interface::getMapping(StagingBuffer stagingBuffer) { return state->getData(stagingBuffer).mapping; }
 
 uint32_t Interface::backbufferCount(Window window)
 {
