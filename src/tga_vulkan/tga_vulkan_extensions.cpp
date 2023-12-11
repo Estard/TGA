@@ -29,11 +29,11 @@ PFN_FUN(void, vkDestroyDebugUtilsMessengerEXT,
 
 namespace tga
 {
-    void loadVkInstanceExtensions(vk::Instance &instance)
-    {
-        PFN_INIT_REQUIRED(instance, vkCreateDebugUtilsMessengerEXT);
-        PFN_INIT_REQUIRED(instance, vkDestroyDebugUtilsMessengerEXT);
-    }
+void loadVkInstanceExtensions(vk::Instance& instance)
+{
+    PFN_INIT_REQUIRED(instance, vkCreateDebugUtilsMessengerEXT);
+    PFN_INIT_REQUIRED(instance, vkDestroyDebugUtilsMessengerEXT);
+}
 }  // namespace tga
 
 // Device extensions. Mostly for ray tracing
@@ -74,22 +74,18 @@ PFN_FUN(void, vkCmdBuildAccelerationStructuresKHR,
 
 namespace tga
 {
-    void loadVkDeviceExtensions(vk::Device &device)
-    {
-        PFN_INIT(device, vkCreateAccelerationStructureKHR);
-        PFN_INIT(device, vkDestroyAccelerationStructureKHR);
-        PFN_INIT(device, vkGetAccelerationStructureDeviceAddressKHR);
-        PFN_INIT(device, vkGetAccelerationStructureBuildSizesKHR);
-        PFN_INIT(device, vkCmdBuildAccelerationStructuresKHR);
+void loadVkDeviceExtensions(vk::Device& device)
+{
+    PFN_INIT(device, vkCreateAccelerationStructureKHR);
+    PFN_INIT(device, vkDestroyAccelerationStructureKHR);
+    PFN_INIT(device, vkGetAccelerationStructureDeviceAddressKHR);
+    PFN_INIT(device, vkGetAccelerationStructureBuildSizesKHR);
+    PFN_INIT(device, vkCmdBuildAccelerationStructuresKHR);
 
-        if(
-            !pfn_vkCreateAccelerationStructureKHR ||
-            !pfn_vkDestroyAccelerationStructureKHR ||
-            !pfn_vkGetAccelerationStructureDeviceAddressKHR ||
-            !pfn_vkGetAccelerationStructureBuildSizesKHR ||
-            !pfn_vkCmdBuildAccelerationStructuresKHR
-        )
+    if (!pfn_vkCreateAccelerationStructureKHR || !pfn_vkDestroyAccelerationStructureKHR ||
+        !pfn_vkGetAccelerationStructureDeviceAddressKHR || !pfn_vkGetAccelerationStructureBuildSizesKHR ||
+        !pfn_vkCmdBuildAccelerationStructuresKHR)
         std::cerr << "Ray Tracing not available\n";
-    }
+}
 
 }  // namespace tga

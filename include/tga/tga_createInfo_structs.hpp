@@ -1,11 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <variant>
 #include <vector>
-#include <array>
 
 #include "tga_format.hpp"
 #include "tga_resource_handles.hpp"
@@ -79,8 +79,8 @@ inline bool operator&(BufferUsage a, BufferUsage b)
 }
 
 struct BufferInfo {
-    BufferUsage usage; /**<Usage flags of the Buffer. Flags can be combined with the | operator*/
-    size_t size;       /**<Size of the buffer data in bytes*/
+    BufferUsage usage;     /**<Usage flags of the Buffer. Flags can be combined with the | operator*/
+    size_t size;           /**<Size of the buffer data in bytes*/
     StagingBuffer srcData; /**<(optional) Data of the Buffer to be uploaded. */
     size_t srcDataOffset;  /**<Offset from the start of the staging buffer*/
 
@@ -113,10 +113,11 @@ struct TextureInfo {
     AddressMode addressMode; /**<How textures reads with uv-coordinates outside of [0:1] are handled. For a list of all
                                 repeat modes refer to tga::AddressMode*/
     TextureType textureType; /**<Type of the texture, by default 2D*/
-    uint32_t depthLayers;  /**<If texture type is not 2D, this describes the third dimension of the image. Must be 6 for
-                              Cube */
-    StagingBuffer srcData; /**<(optional) Data of the Texture. Pass a TGA_NULL_HANDLE to create a texture with undefined content*/
-    size_t srcDataOffset;  /**<Offset from the start of the staging buffer*/
+    uint32_t depthLayers; /**<If texture type is not 2D, this describes the third dimension of the image. Must be 6 for
+                             Cube */
+    StagingBuffer
+        srcData; /**<(optional) Data of the Texture. Pass a TGA_NULL_HANDLE to create a texture with undefined content*/
+    size_t srcDataOffset; /**<Offset from the start of the staging buffer*/
 
     TextureInfo(uint32_t _width, uint32_t _height, Format _format, SamplerMode _samplerMode = SamplerMode::nearest,
                 AddressMode _repeateMode = AddressMode::clampBorder, TextureType _textureType = TextureType::_2D,
@@ -270,9 +271,9 @@ struct VertexLayout {
 enum class ClearOperation { none, color, depth, all };
 
 struct RenderPassInfo {
-    Shader vertexShader; /**<The vertex shader executed by this RenderPass*/
+    Shader vertexShader;   /**<The vertex shader executed by this RenderPass*/
     Shader fragmentShader; /**<The fragment shader executed by this RenderPass*/
-    
+
     using RenderTarget = std::variant<Texture, Window, std::vector<Texture>>;
     RenderTarget renderTarget{}; /**<Where the result of the fragment shader stage
                                   will be saved. Keep in mind that a Window can have several
@@ -386,22 +387,32 @@ static_assert(sizeof(DrawIndexedIndirectCommand) == 5 * sizeof(uint32_t));
 namespace ext
 {
     struct BottomLevelAccelerationStructureInfo {
-        Buffer vertexBuffer;
-        Buffer indexBuffer;
-        size_t vertexStride;
-        Format vertexPositionFormat;
-        uint32_t vertexCount;
-        uint32_t firstVertex;
-        uint32_t vertexOffset;
+        Buffer vertexBuffer;         /**<The vertex buffer defining geometry for this acceleration structure*/
+        Buffer indexBuffer;          /**<The index buffer defining geometry for this acceleration structure*/
+        size_t vertexStride;         /**< Distance between vertex positions inside the vertex buffer in bytes*/
+        Format vertexPositionFormat; /**< Format of the vertex position data*/
+        uint32_t indexCount;         /**<Same as indexCount of indexed draw*/
+        uint32_t firstIndex;         /**<Same as firstIndex of indexed draw*/
+        uint32_t vertexOffset;       /**<Same as vertexOffset of indexed draw*/
+        TGA_SETTER(setVertexBuffer, Buffer, vertexBuffer)
+        TGA_SETTER(setIndexBuffer, Buffer, indexBuffer)
+        TGA_SETTER(setVertexStride, size_t, vertexStride)
+        TGA_SETTER(setVertexPositionFormat, Format, vertexPositionFormat)
+        TGA_SETTER(setIndexCount, uint32_t, indexCount)
+        TGA_SETTER(setFirstIndex, uint32_t, firstIndex)
+        TGA_SETTER(setVertexOffset, uint32_t, vertexOffset)
     };
+
+    using TransformMatrix = std::array<std::array<float, 4>, 3>; /**<4x3 row major matrix defining the transform of this */
 
     struct AccelerationStructureInstanceInfo {
         BottomLevelAccelerationStructure blas;
-        std::array<std::array<float, 4>, 3> transform;
+        TransformMatrix transform; 
     };
 
     struct TopLevelAccelerationStructureInfo {
         std::vector<AccelerationStructureInstanceInfo> instanceInfos;
+        TGA_SETTER(setInstanceInfos, std::vector<AccelerationStructureInstanceInfo> const&, instanceInfos)
     };
 }  // namespace ext
 

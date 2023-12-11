@@ -9,8 +9,8 @@
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
                                                           VkDebugUtilsMessageTypeFlagsEXT,
-                                                          const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                          void*)
+                                                          const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                                                          void *)
 {
     std::cerr << "[VULKAN VALIDATION LAYER]: " << pCallbackData->pMessage << std::endl;
     return VK_FALSE;
@@ -156,7 +156,7 @@ namespace /*conversion from tga to vulkan*/
 
 namespace /*init vulkan objects*/
 {
-    static const std::array<const char*, 1> vulkanLayers = {"VK_LAYER_KHRONOS_validation"};
+    static const std::array<const char *, 1> vulkanLayers = {"VK_LAYER_KHRONOS_validation"};
     vk::Instance createInstance(VulkanWSI const& wsi)
     {
         vk::InstanceCreateFlags iFlags{};
@@ -226,7 +226,7 @@ namespace /*init vulkan objects*/
         asFeature.pNext = &rayQueryFeature;
         gpu.getFeatures2(&features);
 
-        auto extensions = [](bool withRayQuerySupport) -> std::vector<const char*> {
+        auto extensions = [](bool withRayQuerySupport) -> std::vector<const char *> {
             if (!withRayQuerySupport)
                 return {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
             else
@@ -343,10 +343,10 @@ namespace /*helper functions*/
             cmd.end();
             queue.submit(vk::SubmitInfo().setCommandBuffers(cmd), completionSignal);
             auto res = device.waitForFences(1, &completionSignal, true, std::numeric_limits<uint64_t>::max());
-            if(res != vk::Result::eSuccess){
+            if (res != vk::Result::eSuccess) {
                 std::cerr << "Command Submission Failed: " << vk::to_string(res) << '\n';
             }
-            
+
             device.freeCommandBuffers(cmdPool, 1, &cmd);
             device.destroyFence(completionSignal);
         }
@@ -419,7 +419,7 @@ Shader Interface::createShader(ShaderInfo const& shaderInfo)
     auto& shaders = state->shaders;
 
     vk::ShaderModule module =
-        device.createShaderModule({{}, shaderInfo.srcSize, reinterpret_cast<const uint32_t*>(shaderInfo.src)});
+        device.createShaderModule({{}, shaderInfo.srcSize, reinterpret_cast<const uint32_t *>(shaderInfo.src)});
     return Shader{toRawHandle<TgaShader>(shaders.insert({module, shaderInfo.type}))};
 }
 
@@ -733,8 +733,7 @@ InputSet Interface::createInputSet(InputSetInfo const& inputSetInfo)
             auto& data = state->getData(*buffer);
             auto& bufferInfo = bufferInfos.emplace_back().setBuffer(data.buffer).setRange(data.size).setOffset(0);
             writeSet.setBufferInfo(bufferInfo);
-        }
-        else if(auto tlas = std::get_if<ext::TopLevelAccelerationStructure>(&binding.resource)){
+        } else if (auto tlas = std::get_if<ext::TopLevelAccelerationStructure>(&binding.resource)) {
             auto& data = state->getData(*tlas);
             auto& acWriteSet = accelerationStructsWriteSets.emplace_back();
             acWriteSet.setAccelerationStructures(data.accelerationStructure);
@@ -1060,28 +1059,31 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
             .setMask(0xFF)
             .setAccelerationStructureReference(
                 device.getAccelerationStructureAddressKHR(state->getData(instance.blas).accelerationStructure))
-            .setFlags(vk::GeometryInstanceFlagBitsKHR::eForceOpaque | vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
+            .setFlags(vk::GeometryInstanceFlagBitsKHR::eForceOpaque |
+                      vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
     }
 
-    auto instanceDataSize = instances.size()*sizeof(vk::AccelerationStructureInstanceKHR);
-     auto instanceBuffer = device.createBuffer(vk::BufferCreateInfo()
-                                            .setSize(instanceDataSize)
-                                            .setUsage(vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
-                                                      vk::BufferUsageFlagBits::eShaderDeviceAddress|
-                                                      vk::BufferUsageFlagBits::eTransferDst)
-                                            .setQueueFamilyIndices(renderQueueFamily));
+    auto instanceDataSize = instances.size() * sizeof(vk::AccelerationStructureInstanceKHR);
+    auto instanceBuffer = device.createBuffer(
+        vk::BufferCreateInfo()
+            .setSize(instanceDataSize)
+            .setUsage(vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
+                      vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst)
+            .setQueueFamilyIndices(renderQueueFamily));
     auto instanceMemReqs = device.getBufferMemoryRequirements(instanceBuffer);
     auto instanceMem = device.allocateMemory({instanceMemReqs.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(instanceBuffer, instanceMem, 0);
 
-    OneTimeCommand{device,cmdPool,renderQueue}.cmd.updateBuffer(instanceBuffer, 0, instanceDataSize, instances.data());
+    OneTimeCommand{device, cmdPool, renderQueue}.cmd.updateBuffer(instanceBuffer, 0, instanceDataSize,
+                                                                  instances.data());
     // {
     //     OneTimeCommand ot{device, cmdPool, renderQueue};
     //     ot.cmd.updateBuffer(instanceBuffer, 0, instanceDataSize, instances.data());
     // }
 
     // TODO one expects many here?
-    auto instanceData = vk::AccelerationStructureGeometryInstancesDataKHR{}.setData(device.getBufferAddress(instanceBuffer));
+    auto instanceData =
+        vk::AccelerationStructureGeometryInstancesDataKHR{}.setData(device.getBufferAddress(instanceBuffer));
     auto instanceGeometry = vk::AccelerationStructureGeometryKHR{}
                                 .setGeometry(instanceData)
                                 .setGeometryType(vk::GeometryTypeKHR::eInstances);
@@ -1103,11 +1105,9 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
                                                       vk::BufferUsageFlagBits::eShaderDeviceAddress)
                                             .setQueueFamilyIndices(renderQueueFamily));
     auto acMemReq = device.getBufferMemoryRequirements(acBuffer);
-   
+
     auto acMem = device.allocateMemory({acMemReq.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(acBuffer, acMem, 0);
-
-    
 
     auto scratchBuffer = device.createBuffer(
         vk::BufferCreateInfo()
@@ -1127,11 +1127,11 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
 
     buildInfo.setDstAccelerationStructure(tlas);
 
-    auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}.
-    setPrimitiveCount(maxPrimitives)
-    .setFirstVertex(0)
-    .setPrimitiveOffset(0)
-    .setTransformOffset(0);
+    auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
+                         .setPrimitiveCount(maxPrimitives)
+                         .setFirstVertex(0)
+                         .setPrimitiveOffset(0)
+                         .setTransformOffset(0);
 
     {
         OneTimeCommand ot{device, cmdPool, renderQueue};
@@ -1161,16 +1161,15 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
     auto& indexBuffer = state->getData(BLASInfo.indexBuffer).buffer;
 
     // for geometry description
-    auto primitiveCount = BLASInfo.vertexCount/3;
-    assert(primitiveCount*3 == BLASInfo.vertexCount);
+    auto primitiveCount = BLASInfo.indexCount / 3;
+    assert(primitiveCount * 3 == BLASInfo.indexCount);
     auto triangleData = vk::AccelerationStructureGeometryTrianglesDataKHR{}
                             .setIndexType(vk::IndexType::eUint32)
                             .setIndexData(device.getBufferAddress(indexBuffer))
                             .setVertexData(device.getBufferAddress(vertexBuffer))
                             .setVertexFormat(tgaFormatToVkFormat(BLASInfo.vertexPositionFormat))
                             .setVertexStride(BLASInfo.vertexStride)
-                            .setMaxVertex(BLASInfo.firstVertex+BLASInfo.vertexCount);
-    
+                            .setMaxVertex(BLASInfo.firstIndex + BLASInfo.indexCount);
 
     auto geometry = vk::AccelerationStructureGeometryKHR{}
                         .setGeometryType(vk::GeometryTypeKHR::eTriangles)
@@ -1214,9 +1213,9 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
     buildInfo.setDstAccelerationStructure(blas);
 
     auto rangeInfo = vk::AccelerationStructureBuildRangeInfoKHR{}
-                         .setFirstVertex(BLASInfo.firstVertex)
+                         .setFirstVertex(BLASInfo.vertexOffset)
                          .setPrimitiveCount(primitiveCount)
-                         .setPrimitiveOffset(0);
+                         .setPrimitiveOffset(sizeof(uint32_t) * BLASInfo.firstIndex);
 
     {
         OneTimeCommand ot{device, cmdPool, renderQueue};
@@ -1315,7 +1314,7 @@ void Interface::dispatch(CommandBuffer cmdBuffer, uint32_t groupCountX, uint32_t
     state->getData(cmdBuffer).cmdBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
-void Interface::inlineBufferUpdate(CommandBuffer cmdBuffer, Buffer dst, void const* srcData, uint16_t dataSize,
+void Interface::inlineBufferUpdate(CommandBuffer cmdBuffer, Buffer dst, void const *srcData, uint16_t dataSize,
                                    size_t dstOffset)
 {
     state->getData(cmdBuffer).cmdBuffer.updateBuffer(state->getData(dst).buffer, dstOffset, dataSize, srcData);
@@ -1417,7 +1416,7 @@ void Interface::waitForCompletion(CommandBuffer cmdBuffer)
     device.resetFences(cmdData.completionFence);
 }
 
-void* Interface::getMapping(StagingBuffer stagingBuffer) { return state->getData(stagingBuffer).mapping; }
+void *Interface::getMapping(StagingBuffer stagingBuffer) { return state->getData(stagingBuffer).mapping; }
 
 uint32_t Interface::backbufferCount(Window window)
 {
