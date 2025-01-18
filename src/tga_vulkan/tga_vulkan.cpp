@@ -1111,10 +1111,10 @@ ext::TopLevelAccelerationStructure Interface::createTopLevelAccelerationStructur
 
     auto scratchBuffer = device.createBuffer(
         vk::BufferCreateInfo()
-            .setSize(buildSizes.accelerationStructureSize)
+            .setSize(buildSizes.buildScratchSize)
             .setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress)
             .setQueueFamilyIndices(renderQueueFamily));
-    auto scratchBufferMemReq = device.getBufferMemoryRequirements(acBuffer);
+    auto scratchBufferMemReq = device.getBufferMemoryRequirements(scratchBuffer);
     auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(scratchBuffer, scratchBufferMem, 0);
 
@@ -1197,10 +1197,10 @@ ext::BottomLevelAccelerationStructure Interface::createBottomLevelAccelerationSt
 
     auto scratchBuffer = device.createBuffer(
         vk::BufferCreateInfo()
-            .setSize(buildSizes.accelerationStructureSize)
+            .setSize(buildSizes.buildScratchSize)
             .setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress)
             .setQueueFamilyIndices(renderQueueFamily));
-    auto scratchBufferMemReq = device.getBufferMemoryRequirements(acBuffer);
+    auto scratchBufferMemReq = device.getBufferMemoryRequirements(scratchBuffer);
     auto scratchBufferMem = device.allocateMemory({scratchBufferMemReq.size, deviceMemoryIndex, &memFlags});
     device.bindBufferMemory(scratchBuffer, scratchBufferMem, 0);
 
