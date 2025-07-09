@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: install_deps_vulkan
-      run: sudo apt update && sudo apt install vulkan-sdk
+      run: sudo apt update && sudo apt install libvulkan-dev vulkan-headers vulkan-validationlayers glslang-tools
     - name: install_deps_glfw
       run: sudo apt-get install libglfw3-dev
     - name: install_deps_glm
