@@ -7,9 +7,9 @@
 #include "tga/tga_vulkan/tga_vulkan_debug.hpp"
 #include "tga/tga_vulkan/tga_vulkan_extensions.hpp"
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT,
-                                                          VkDebugUtilsMessageTypeFlagsEXT,
-                                                          const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+static VKAPI_ATTR vk::Bool32 VKAPI_CALL vulkanDebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT,
+                                                          vk::DebugUtilsMessageTypeFlagsEXT,
+                                                          const vk::DebugUtilsMessengerCallbackDataEXT *pCallbackData,
                                                           void *)
 {
     std::cerr << "[VULKAN VALIDATION LAYER]: " << pCallbackData->pMessage << std::endl;
@@ -185,7 +185,7 @@ namespace /*init vulkan objects*/
             vk::DebugUtilsMessengerCreateInfoEXT()
                 .setMessageSeverity(MsgSeverity::eWarning | MsgSeverity::eError)
                 .setMessageType(MsgType::eGeneral | MsgType::ePerformance | MsgType::eValidation)
-                .setPfnUserCallback(&vulkanDebugCallback));
+                .setPfnUserCallback(vulkanDebugCallback));
     }
 
     vk::PhysicalDevice choseGPU(vk::Instance& instance)
