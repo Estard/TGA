@@ -25,11 +25,3 @@ jobs:
       run: cmake . -D TGA_BUILD_EXAMPLES=1
     - name: make 
       run: make -j${nproc}
-    - uses: actions/upload-artifact@v1
-      with:
-        name: heightmapDemo
-        path: examples/heightmapDemo/heightmapDemo
-    - uses: actions/upload-artifact@v1
-      with:
-        name: particleDemo
-        path: examples/particleDemo/particleDemo
