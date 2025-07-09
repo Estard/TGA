@@ -630,9 +630,12 @@ Window Interface::createWindow(WindowInfo const& windowInfo)
     windowData.toPresentSrcTransitionCmds = device.allocateCommandBuffers(
         {cmdPool, vk::CommandBufferLevel::ePrimary, static_cast<uint32_t>(windowData.images.size())});
 
+    windowData.imageAcquiredSignals.reserve(windowData.images.size());
+    windowData.imageAcquiredFences.reserve(windowData.images.size());
     for (size_t i = 0; i < windowData.images.size(); ++i) {
         // After acquire operation
         windowData.imageAcquiredSignals.push_back(device.createSemaphore({}));
+        windowData.imageAcquiredFences.push_back(device.createFence({vk::FenceCreateFlagBits::eSignaled}));
 
         auto& toColorAttachmentCmd = windowData.toColorAttachmentTransitionCmds[i];
         toColorAttachmentCmd.begin({vk::CommandBufferUsageFlagBits::eSimultaneousUse});
@@ -1435,16 +1438,25 @@ uint32_t Interface::nextFrame(Window window)
     auto acquireSignal = windowData.nextAcquireSignal;
     windowData.nextAcquireSignal =
         (windowData.nextAcquireSignal + 1) % static_cast<uint32_t>(windowData.imageAcquiredSignals.size());
+
+    static constexpr auto noTimeout = std::numeric_limits<uint64_t>::max();
+
+    auto& imageAcquiredSignal = windowData.imageAcquiredSignals[acquireSignal];
+    auto& imageAcquiredFence = windowData.imageAcquiredFences[acquireSignal];
+
+    std::ignore = device.waitForFences(imageAcquiredFence,true,noTimeout);
     auto nextFrameIndex = device
-                              .acquireNextImageKHR(windowData.swapchain, std::numeric_limits<uint64_t>::max(),
-                                                   windowData.imageAcquiredSignals[acquireSignal])
+                              .acquireNextImageKHR(windowData.swapchain, noTimeout,
+                                                   imageAcquiredSignal)
                               .value;
+    device.resetFences(imageAcquiredFence);
 
     vk::PipelineStageFlags waitStage{vk::PipelineStageFlagBits::eColorAttachmentOutput};
     renderQueue.submit(vk::SubmitInfo()
                            .setCommandBuffers(windowData.toColorAttachmentTransitionCmds[nextFrameIndex])
-                           .setWaitSemaphores(windowData.imageAcquiredSignals[acquireSignal])
-                           .setWaitDstStageMask(waitStage));
+                           .setWaitSemaphores(imageAcquiredSignal)
+                           .setWaitDstStageMask(waitStage),
+                        imageAcquiredFence);
 
     return nextFrameIndex;
 }

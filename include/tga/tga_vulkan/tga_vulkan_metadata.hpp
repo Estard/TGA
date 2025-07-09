@@ -83,6 +83,7 @@ namespace vkData
         std::vector<vk::Image> images;
         std::vector<vk::ImageView> imageViews;
         std::vector<vk::Semaphore> imageAcquiredSignals{};
+        std::vector<vk::Fence> imageAcquiredFences{};
         uint32_t nextAcquireSignal{0};
         std::vector<vk::Semaphore> renderCompletedSignals{};
         uint32_t nextRenderSignal{0};

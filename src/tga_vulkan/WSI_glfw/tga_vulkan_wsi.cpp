@@ -281,6 +281,10 @@ void VulkanWSI::free(Window window, vk::Instance& instance, vk::Device& device)
         device.destroy(signal);
     }
 
+    for (auto& fence : handle.imageAcquiredFences) {
+        device.destroy(fence);
+    }
+
     glfwDestroyWindow(std::any_cast<GLFWwindow *>(handle.nativeHandle));
     windows.erase(window);
 }
@@ -292,9 +296,7 @@ void VulkanWSI::setWindowTitle(Window window, const char *title)
 
 vkData::Window& VulkanWSI::getWindow(Window window) { return windows[window]; }
 
-
 void VulkanWSI::pollEvents(Window) { glfwPollEvents(); }
-
 
 bool VulkanWSI::windowShouldClose(Window window)
 {
